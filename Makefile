@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -Ivendor -Wall -g 
-LDFLAGS = -Lvendor/lib -lncurses -lcunit -lm -lSDL2 -lSDL2_ttf
+LDFLAGS = -Lvendor/lib -lm -lSDL2 -lSDL2_ttf
 
 SRCS = $(wildcard src/*.c)
 TEST_SRC = $(wildcard tests/*.c) 
