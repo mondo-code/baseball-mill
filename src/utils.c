@@ -15,6 +15,7 @@ int random_int_range(int min, int max) {
 
 // thank you, stack overflow
 int random_int_limit(int limit) {
+	srand(time(NULL));
 	int divisor = RAND_MAX/(limit+1);
 	int retval;
 

@@ -93,7 +93,7 @@ void destroy_team(Team *team) {
 	team->pitchers = NULL;
 }
 
-// these functions get the sum of the ratings of the hitter and pitcher groups
+// these functions get the average of the ratings of the hitter and pitcher groups
 // of a team, used as a hidden rating to determine game outcomes
 unsigned int get_hitters_rating(Team *team) {
 	unsigned int total = 0;
@@ -101,7 +101,7 @@ unsigned int get_hitters_rating(Team *team) {
 		Hitter *h = team->hitters[i];
 		total += (h->ratings.contact + h->ratings.eye + h->ratings.power + h->ratings.speed);
 	}
-	return total;
+	return total / team->n_hitters;
 }
 
 unsigned int get_pitchers_rating(Team *team) {
@@ -110,7 +110,7 @@ unsigned int get_pitchers_rating(Team *team) {
 		Pitcher *p = team->pitchers[i];
 		total += (p->ratings.command + p->ratings.stamina + p->ratings.stuff);
 	}
-	return total;
+	return total / team->n_pitchers;
 }
 
 // functions for descending order quicksort

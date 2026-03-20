@@ -9,8 +9,7 @@
 
 // weighted splits for doubles, triples, homers for random gen
 const double w2B = 0.60, w3B = 0.05;
-const double avgBA = 0.250;
-const double avgOBP = 0.330;
+const double avgBA = 0.240;
 const char* team_names[] = TEAM_NAMES;
 const char* team_short_names[] = TEAM_SHORT_NAMES;
 
@@ -29,18 +28,16 @@ void sim_hitter_stats(Hitter *h) {
 	double p_walk_base = clamp(0.02 + 0.0015 * h->ratings.eye);
 	// this keeps elite players from getting wildly unrealistic walk rates
 	double p_walk = clamp(p_walk_base * (1.0 - 0.3 * (h->ratings.eye / 99.0)));
+	double p_hit = clamp(avgBA + 0.003 * h->ratings.contact);
 	double p_hr = clamp(0.02 + 0.002 * h->ratings.power);
 	double p_sb = clamp(0.02 + 0.002 * h->ratings.speed);
-	// RBI probability might be better as linear combination of power and contact
-	// might change depending on how this simulates
 	double p_rbi = clamp(0.02 + 0.005 * h->ratings.power);
 
 	// generate counting stats for this sim
 	unsigned int plate_appearances = random_int_range(4, 5);
 	unsigned int walks = binom_draw(plate_appearances, p_walk);
 	unsigned int at_bats = plate_appearances - walks;
-	unsigned int expected_hits = (unsigned int)round(at_bats * avgBA);
-	unsigned int hits = binom_draw(at_bats, expected_hits / (double)at_bats);
+	unsigned int hits = binom_draw(at_bats, p_hit);
 	unsigned int homers = binom_draw(hits, p_hr);
 	unsigned int xb = hits - homers;
 	unsigned int doubles = (unsigned int)xb * w2B;
@@ -143,8 +140,8 @@ Sim *init_sim(Team **al_teams, Team **nl_teams, const char *selected_team) {
 }
 
 void sim_match(Match *m) {
-	const double average_runs = 3;
-	const double hitting_impact = 1.0;
+	const double average_runs = 4;
+	const double hitting_impact = 1.2;
 	const double pitching_impact = 1.2;
 	unsigned int t1_hitting = get_hitters_rating(m->t1);
 	unsigned int t1_pitching = get_pitchers_rating(m->t1);
