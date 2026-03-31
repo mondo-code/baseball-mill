@@ -164,9 +164,6 @@ size_t sdl_main_menu(SDLCtx *ctx, const char **options, size_t n_options) {
 		SDL_Event e;
 		while (SDL_PollEvent(&e)) {
 			switch (e.type) {
-				case SDL_QUIT:
-					running = false;
-					break;
 				case SDL_KEYDOWN:
 					switch(e.key.keysym.sym) {
 						case SDLK_DOWN: case SDLK_j:
@@ -266,10 +263,6 @@ const char *sdl_team_select(SDLCtx *ctx, Team **al_teams, size_t n_al, Team **nl
 		SDL_Event e;
 		while (SDL_PollEvent(&e)) {
 			switch(e.type) {
-				case SDL_QUIT:
-					running = false;
-					break;
-
 				case SDL_KEYDOWN:
 					switch (e.key.keysym.sym) {
 						case SDLK_TAB:
@@ -515,9 +508,6 @@ void sdl_season_ui(SDLCtx *ctx, Sim *sim) {
 		SDL_Event e;
 		while (SDL_PollEvent(&e)) {
 			switch (e.type) {
-				case SDL_QUIT:
-					running = false;
-					break;
 				case SDL_KEYDOWN:
 					switch (e.key.keysym.sym) {
 						case SDLK_SPACE:
@@ -586,7 +576,7 @@ void sdl_world_series_ui(SDLCtx *ctx, Sim *sim) {
 		SDL_Event e;
 		while (SDL_PollEvent(&e)) {
 			switch (e.type) {
-				case SDL_QUIT: case SDL_KEYDOWN: case SDL_MOUSEBUTTONDOWN:
+				case SDL_KEYDOWN: case SDL_MOUSEBUTTONDOWN:
 					running = false;
 					break;
 			}
@@ -635,7 +625,6 @@ void sdl_season_end_ui(SDLCtx *ctx, Sim *sim) {
 	while (running) {
 		SDL_Event e;
 		while (SDL_PollEvent(&e)) {
-			if (e.type == SDL_QUIT) running = false;
 			if (e.type == SDL_KEYDOWN) running = false;
 		}
 
@@ -695,8 +684,8 @@ void sdl_offseason_ui(SDLCtx *ctx, Sim *sim) {
 		SDL_GetWindowSize(ctx->window, &win_width, &win_height);
 
 		// one panel for roster, another panel for new generated players
-		int pad = 12;
-		int gap = 8;
+		int pad = 48;
+		int gap = 12;
 		int half_w = (win_width - pad * 2 - gap) / 2;
 		int half_h = (win_height - pad * 2 - gap * 2 - ctx->font_height - 8) / 2;
 		int top_y = pad;
@@ -724,9 +713,6 @@ void sdl_offseason_ui(SDLCtx *ctx, Sim *sim) {
 		SDL_Event e;
 		while (SDL_PollEvent(&e)) {
 			switch (e.type) {
-				case SDL_QUIT:
-					running = false;
-					break;
 				case SDL_KEYDOWN:
 					switch (e.key.keysym.sym) {
 						case SDLK_ESCAPE:
@@ -782,11 +768,10 @@ void sdl_offseason_ui(SDLCtx *ctx, Sim *sim) {
 							Hitter *new_hitters[MAX_HITTERS];
 							size_t n_new_hitters = 0;
 							for (size_t i = 0; i < MAX_HITTERS; i++) {
-								if (hitter_roster_active[i]) {
+								if (hitter_roster_active[i])
 									new_hitters[n_new_hitters++] = sel_team->hitters[i];
-								} else {
+								else
 									free_hitter(sel_team->hitters[i]);
-								}
 							}
 							for (size_t i = 0; i < N_HITTER_PROSPECTS; i++)
 								if (hitter_prospect_active[i])
@@ -797,12 +782,10 @@ void sdl_offseason_ui(SDLCtx *ctx, Sim *sim) {
 							Pitcher *new_pitchers[MAX_PITCHERS];
 							size_t n_new_pitchers = 0;
 							for (size_t i = 0; i < MAX_PITCHERS; i++) {
-								if (pitcher_roster_active[i]) {
+								if (pitcher_roster_active[i])
 									new_pitchers[n_new_pitchers++] = sel_team->pitchers[i];
-								}
-								else {
+								else
 									free_pitcher(sel_team->pitchers[i]);
-								}
 							}
 							for (size_t i = 0; i < N_PITCHER_PROSPECTS; i++)
 								if (pitcher_prospect_active[i])
