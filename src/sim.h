@@ -68,6 +68,7 @@ void sim_month(Sim *sim);
 void advance_month(Sim *sim);
 void gen_opponents(Sim *s, size_t n_opponents);
 void gen_month_schedule(Sim *sim);
+void reset_season(Sim *sim);
 const char *month_str(Month m);
 
 #endif // SIM_H

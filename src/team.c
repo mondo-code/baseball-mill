@@ -57,17 +57,33 @@ bool insert_pitcher(Team *team, Pitcher *pitcher) {
 	return true;
 }
 
+bool swap_hitter(Team *team, size_t index, Hitter *h) {
+	if (!team || !h || index >= team->n_hitters) return false;
+	Hitter *old = team->hitters[index];
+	team->hitters[index] = h;
+	if (old) free_hitter(old);
+	return true;
+};
+
+bool swap_pitcher(Team *team, size_t index, Pitcher *p) {
+	if (!team || !p || index >= team->n_pitchers) return false;
+	Pitcher *old = team->pitchers[index];
+	team->pitchers[index] = p;
+	if (old) free_pitcher(old);
+	return true;
+}
+
 void gen_roster(Team *team) {
 	// populate roster with random generated players
 	for (size_t h = 0; h < MAX_HITTERS; h++) {
-		Hitter *new_hitter = gen_hitter(file_random_line("firstnames.txt"), file_random_line("lastnames.txt"), random_int_range(18, 36));
+		Hitter *new_hitter = gen_hitter(random_int_range(18, 36));
 		if (!insert_hitter(team, new_hitter)) {
 			return;
 		}
 	}
 
 	for (size_t p = 0; p < MAX_PITCHERS; p++) {
-		Pitcher *new_pitcher = gen_pitcher(file_random_line("firstnames.txt"), file_random_line("lastnames.txt"), random_int_range(18, 36));
+		Pitcher *new_pitcher = gen_pitcher(random_int_range(18, 36));
 		if (!insert_pitcher(team, new_pitcher)) {
 			return;
 		}

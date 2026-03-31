@@ -25,6 +25,8 @@ Team **init_al_teams();
 Team **init_nl_teams();
 bool insert_hitter(Team *team, Hitter *hitter);
 bool insert_pitcher(Team *team, Pitcher *pitcher);
+bool swap_hitter(Team *team, size_t index, Hitter *h);
+bool swap_pitcher(Team *team, size_t index, Pitcher *p);
 void gen_roster(Team *team);
 void destroy_team(Team *team);
 unsigned int get_hitters_rating(Team *team);

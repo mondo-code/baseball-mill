@@ -21,7 +21,7 @@ typedef struct {
 } HitterStats;
 
 typedef struct {
-	Player *base;
+	Player base;
 	HitterRatings ratings;
 	HitterStats stats;
 } Hitter;
@@ -42,13 +42,15 @@ typedef struct {
 } PitcherStats;
 
 typedef struct {
-	Player *base;
+	Player base;
 	PitcherRatings ratings;
 	PitcherStats stats;
 } Pitcher;
 
-Hitter *gen_hitter(const char *first_name, const char *last_name, unsigned int age);
-Pitcher *gen_pitcher(const char *first_name, const char *last_name, unsigned int age);
+Hitter *gen_hitter(unsigned int age);
+Pitcher *gen_pitcher(unsigned int age);
+void free_hitter(Hitter *h);
+void free_pitcher(Pitcher *p);
 void add_innings(Innings *a, Innings *b);
 
 #endif  // PLAYER_H

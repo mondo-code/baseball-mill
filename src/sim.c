@@ -198,14 +198,14 @@ void sim_series(Series *s) {
 	Team *t2 = s->matches[0].t2;
 	unsigned int t1_reg_wins = t1->wins;
 	unsigned int t2_reg_wins = t2->wins;
-	unsigned int t1_wins = 0;
-	unsigned int t2_wins = 0;
+	s->t1_wins = 0;
+	s->t2_wins = 0;
 	unsigned int max_wins = (MAX_SERIES_MATCHES / 2) + 1;
 	size_t i;
-	for (i = 0; i < MAX_SERIES_MATCHES && t1_wins < max_wins && t2_wins < max_wins; i++) {
+	for (i = 0; i < MAX_SERIES_MATCHES && s->t1_wins < max_wins && s->t2_wins < max_wins; i++) {
 		sim_match(&s->matches[i]);
-		t1_wins = t1->wins - t1_reg_wins; 
-		t2_wins = t2->wins - t2_reg_wins;
+		s->t1_wins = t1->wins - t1_reg_wins; 
+		s->t2_wins = t2->wins - t2_reg_wins;
 	}
 	s->n_matches = i;
 }
@@ -297,6 +297,30 @@ void gen_month_schedule(Sim *sim) {
             }
         }
     }
+}
+
+void reset_season(Sim *sim) {
+	for (int i = 0; i < N_AL_TEAMS; i++) {
+		Team *t = sim->al_teams[i];
+		t->wins = 0;
+		t->losses = 0;
+		for (int h = 0; h < t->n_hitters; h++) 
+			memset(&t->hitters[h]->stats, 0, sizeof(HitterStats));
+		for (int p = 0; p < t->n_pitchers; p++) 
+			memset(&t->pitchers[p]->stats, 0, sizeof(PitcherStats));
+	}
+
+	for (int i = 0; i < N_NL_TEAMS; i++) {
+		Team *t = sim->nl_teams[i];
+		sim->nl_teams[i]->wins = 0;
+		sim->nl_teams[i]->losses = 0;
+		for (int h = 0; h < t->n_hitters; h++) 
+			memset(&t->hitters[h]->stats, 0, sizeof(HitterStats));
+		for (int p = 0; p < t->n_pitchers; p++) 
+			memset(&t->pitchers[p]->stats, 0, sizeof(PitcherStats));
+	}
+
+	sim->month = APRIL;
 }
 
 const char *month_str(Month m) {

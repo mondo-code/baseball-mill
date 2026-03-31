@@ -1,5 +1,6 @@
 #include <SDL2/SDL.h>
 #include "sdl_frontend.h"
+#include "utils.h"
 
 #define COL_BG				((SDL_Color){  15,  15,  20, 255 })  // near-black
 #define COL_PANEL			((SDL_Color){  25,  28,  36, 255 })  // panel fill
@@ -10,6 +11,7 @@
 #define COL_HIGHLIGHT		((SDL_Color){  50, 120, 220, 255 })  // selection bg
 #define COL_HIGHLIGHT_TXT	((SDL_Color){ 255, 255, 255, 255 })
 #define COL_SELECTED		((SDL_Color){  60, 200, 100, 255 })  // "your team" indicator
+#define COL_URGENT			((SDL_Color){ 220, 80,	80,	 255 })
 #define BUFFER_LEN			128
 
 const unsigned int DEFAULT_DELAY = 16;
@@ -30,7 +32,7 @@ bool init_sdl_ctx(
 		fprintf(stderr, "error on TTF init: %s\n", SDL_GetError());
 		return false;
 	}
-	fprintf(stdout, "Initialized TTF");
+	fprintf(stdout, "Initialized TTF\n");
 
 	ctx->window = SDL_CreateWindow(
 			"Baseball Mill v0.1",
@@ -449,14 +451,12 @@ static void draw_hitter_stats(SDLCtx *ctx, Panel p, Sim *s) {
 
     for (int i = 0; i < s->selected_team->n_hitters && cy + row_h < p.y + p.h; i++) {
         Hitter *h = s->selected_team->hitters[i];
+		char name[64];
+		snprintf(name, sizeof(name), "%s %s", h->base.first_name, h->base.last_name);
         char buf[512];
         snprintf(buf, sizeof(buf),
                  "%-22s %4d  %4d  .%03d   .%03d   .%03d   .%03d  %4d %4d %4d %4d %4d %4d",
-                 ({
-                     static char name[32];
-                     snprintf(name, sizeof(name), "%s %s", h->base->first_name, h->base->last_name);
-                     name;
-                 }),
+				 name,
                  h->stats.PA, h->stats.AB,
                  (int)(h->stats.AVG * 1000),
                  (int)(h->stats.OBP * 1000),
@@ -480,14 +480,12 @@ static void draw_pitcher_stats(SDLCtx *ctx, Panel p, Sim *s) {
 
 	for (int i = 0; i < s->selected_team->n_pitchers && cy + row_h < p.y + p.h; i++) {
 		Pitcher *pitcher = s->selected_team->pitchers[i];
-		char buf[256];
+		char name[64];
+		snprintf(name, sizeof(name), "%s %s", pitcher->base.first_name, pitcher->base.last_name);
+		char buf[512];
 		snprintf(buf, sizeof(buf),
                  "%-22s  %3d   %4d.%d  %6.2f  %5d %4d",
-				 ({
-				  static char nm[24];
-				  snprintf(nm, sizeof(nm), "%s %s", pitcher->base->first_name, pitcher->base->last_name);
-				  nm;
-				  }),
+				 name,
 				 pitcher->stats.GS,
 				 pitcher->stats.IP.whole,
 				 pitcher->stats.IP.thirds,
@@ -607,9 +605,9 @@ void sdl_world_series_ui(SDLCtx *ctx, Sim *sim) {
 			if (tw > max_width) max_width = tw;
 		}
 
-		int panel_width = max_width + 48;
+		int panel_width = max_width + 64;
 		int panel_x = (win_width - panel_width) / 2;
-		int padding = 16;
+		int padding = 24; 
 
 		draw_panel(ctx, panel_x - padding, start_y - padding, 
 				panel_width + padding * 2, total_height + padding * 2, "World Series");
@@ -628,7 +626,7 @@ void sdl_world_series_ui(SDLCtx *ctx, Sim *sim) {
 		SDL_Delay(DEFAULT_DELAY);
 	}
 
-	sdl_season_end_ui(ctx, sim);
+	sdl_offseason_ui(ctx, sim);
 }
 
 // this is a placeholder, offseason UI will be called instead of this
@@ -656,5 +654,320 @@ void sdl_season_end_ui(SDLCtx *ctx, Sim *sim) {
 	}
 }
 
-// TODO: implement offseason roster changes
-void sdl_offseason_ui(SDLCtx *ctx, Sim *sim); 
+typedef enum {
+	FOCUS_HITTER_ROSTER = 0,
+    FOCUS_HITTER_PROSPECTS,
+    FOCUS_PITCHER_ROSTER,
+    FOCUS_PITCHER_PROSPECTS,
+    FOCUS_COUNT
+} OffseasonFocus;
+
+void sdl_offseason_ui(SDLCtx *ctx, Sim *sim) {
+	// generate prospects that the player can choose to replace players with
+	const size_t N_HITTER_PROSPECTS = 3;
+	const size_t N_PITCHER_PROSPECTS = 2;
+	Hitter *hitter_prospects[N_HITTER_PROSPECTS];
+	Pitcher *pitcher_prospects[N_PITCHER_PROSPECTS];
+	Team *sel_team = sim->selected_team;
+
+	for (size_t h = 0; h < N_HITTER_PROSPECTS; h++)
+		hitter_prospects[h] = gen_hitter(random_int_range(18, 24));
+	for (size_t p = 0; p < N_PITCHER_PROSPECTS; p++)
+		pitcher_prospects[p] = gen_pitcher(random_int_range(18, 24));
+
+	bool hitter_roster_active[MAX_HITTERS];
+	bool hitter_prospect_active[N_HITTER_PROSPECTS];
+	bool pitcher_roster_active[MAX_PITCHERS];
+	bool pitcher_prospect_active[N_PITCHER_PROSPECTS];
+
+	for (size_t i = 0; i < MAX_HITTERS; i++) hitter_roster_active[i] = true;
+	for (size_t i = 0; i < N_HITTER_PROSPECTS; i++) hitter_prospect_active[i] = false;
+	for (size_t i = 0; i < MAX_PITCHERS; i++) pitcher_roster_active[i] = true;
+	for (size_t i = 0; i < N_PITCHER_PROSPECTS; i++) pitcher_prospect_active[i] = false;
+
+	OffseasonFocus focus = FOCUS_HITTER_ROSTER;
+	size_t sel[FOCUS_COUNT] = {0};
+	char validation_msg[BUFFER_LEN];
+
+	bool running = true;
+	while (running) {
+		int win_width, win_height;
+		SDL_GetWindowSize(ctx->window, &win_width, &win_height);
+
+		// one panel for roster, another panel for new generated players
+		int pad = 12;
+		int gap = 8;
+		int half_w = (win_width - pad * 2 - gap) / 2;
+		int half_h = (win_height - pad * 2 - gap * 2 - ctx->font_height - 8) / 2;
+		int top_y = pad;
+		int bot_y = pad + half_h + gap; 
+        int left_x = pad;
+        int right_x = pad + half_w + gap;
+
+		Panel panels[FOCUS_COUNT] = {
+			[FOCUS_HITTER_ROSTER] = { left_x, top_y, half_w, half_h},
+			[FOCUS_HITTER_PROSPECTS] = { right_x, top_y, half_w, half_h },
+			[FOCUS_PITCHER_ROSTER] = { left_x, bot_y, half_w, half_h },
+			[FOCUS_PITCHER_PROSPECTS] = { right_x, bot_y, half_w, half_h },
+		};
+
+		size_t panel_counts[FOCUS_COUNT] = {
+			[FOCUS_HITTER_ROSTER]    = sel_team->n_hitters,
+			[FOCUS_HITTER_PROSPECTS] = N_HITTER_PROSPECTS,
+			[FOCUS_PITCHER_ROSTER]   = sel_team->n_pitchers,
+			[FOCUS_PITCHER_PROSPECTS]= N_PITCHER_PROSPECTS,
+		};
+
+		int row_height = ctx->font_height + 4;
+		int content_off = ctx->font_height + 6;
+
+		SDL_Event e;
+		while (SDL_PollEvent(&e)) {
+			switch (e.type) {
+				case SDL_QUIT:
+					running = false;
+					break;
+				case SDL_KEYDOWN:
+					switch (e.key.keysym.sym) {
+						case SDLK_ESCAPE:
+							running = false;
+							break;
+						case SDLK_TAB:
+							focus = (focus + 1) % FOCUS_COUNT;
+							break;
+						case SDLK_UP: case SDLK_k:
+							if (sel[focus] > 0) sel[focus]--;
+							else sel[focus] = panel_counts[focus] - 1;
+							break;
+						case SDLK_DOWN: case SDLK_j:
+							sel[focus] = (sel[focus] + 1) % panel_counts[focus];
+							break;
+						case SDLK_SPACE:
+							validation_msg[0] = '\0';
+							switch (focus) {
+								case FOCUS_HITTER_ROSTER:
+									hitter_roster_active[sel[focus]] = !hitter_roster_active[sel[focus]];
+									break;
+								case FOCUS_HITTER_PROSPECTS:
+									hitter_prospect_active[sel[focus]] = !hitter_prospect_active[sel[focus]];
+									break;
+								case FOCUS_PITCHER_ROSTER:
+									pitcher_roster_active[sel[focus]] = !pitcher_roster_active[sel[focus]];
+									break;
+								case FOCUS_PITCHER_PROSPECTS:
+									pitcher_prospect_active[sel[focus]] = !pitcher_prospect_active[sel[focus]];
+									break;
+								default: break;
+							}
+							break;
+						case SDLK_RETURN: case SDLK_KP_ENTER: {                            
+							unsigned int active_hitters = 0;
+							for (int i = 0; i < sel_team->n_hitters; i++)
+								if (hitter_roster_active[i]) active_hitters++;
+							for (int i = 0; i < N_HITTER_PROSPECTS; i++)
+								if (hitter_prospect_active[i]) active_hitters++;
+
+							unsigned int active_pitchers = 0;
+							for (int i = 0; i < sel_team->n_pitchers; i++)
+								if (pitcher_roster_active[i]) active_pitchers++;
+							for (int i = 0; i < N_PITCHER_PROSPECTS; i++)
+								if (pitcher_prospect_active[i]) active_pitchers++;
+
+							if (active_hitters != sel_team->n_hitters || active_pitchers != sel_team->n_pitchers) {
+								snprintf(validation_msg, sizeof(validation_msg), " invalid roster size ");
+								break;
+							}
+
+							// build new rosters
+							Hitter *new_hitters[MAX_HITTERS];
+							size_t n_new_hitters = 0;
+							for (size_t i = 0; i < MAX_HITTERS; i++) {
+								if (hitter_roster_active[i]) {
+									new_hitters[n_new_hitters++] = sel_team->hitters[i];
+								} else {
+									free_hitter(sel_team->hitters[i]);
+								}
+							}
+							for (size_t i = 0; i < N_HITTER_PROSPECTS; i++)
+								if (hitter_prospect_active[i])
+									new_hitters[n_new_hitters++] = hitter_prospects[i]; 
+							memcpy(sel_team->hitters, new_hitters, n_new_hitters * sizeof(Hitter *));
+							sel_team->n_hitters = n_new_hitters;
+
+							Pitcher *new_pitchers[MAX_PITCHERS];
+							size_t n_new_pitchers = 0;
+							for (size_t i = 0; i < MAX_PITCHERS; i++) {
+								if (pitcher_roster_active[i]) {
+									new_pitchers[n_new_pitchers++] = sel_team->pitchers[i];
+								}
+								else {
+									free_pitcher(sel_team->pitchers[i]);
+								}
+							}
+							for (size_t i = 0; i < N_PITCHER_PROSPECTS; i++)
+								if (pitcher_prospect_active[i])
+									new_pitchers[n_new_pitchers++] = pitcher_prospects[i];
+							memcpy(sel_team->pitchers, new_pitchers, n_new_pitchers * sizeof(Pitcher *));
+							sel_team->n_pitchers = n_new_pitchers;
+
+							running = false;
+							break;
+						}
+					}
+					break;
+				case SDL_MOUSEMOTION: {
+					int mx = e.motion.x, my = e.motion.y;
+					for (int p = 0; p < FOCUS_COUNT; p++) {
+						if (panel_hit(panels[p], mx, my)) {
+							int row = (my - panels[p].y - content_off) / row_height;
+							if (row >= 0 && (size_t)row < panel_counts[p]) {
+								focus  = p;
+								sel[p] = row;
+							}
+						}
+					}
+					break;
+				}
+
+				case SDL_MOUSEBUTTONDOWN: {
+					if (e.button.button != SDL_BUTTON_LEFT) break;
+					int mx = e.button.x, my = e.button.y;
+					for (int p = 0; p < FOCUS_COUNT; p++) {
+						if (!panel_hit(panels[p], mx, my)) continue;
+						int row = (my - panels[p].y - content_off) / row_height;
+						if (row < 0 || (size_t)row >= panel_counts[p]) break;
+						if ((int)focus == p && (int)sel[p] == row) {
+							SDL_Event fake = { .type = SDL_KEYDOWN };
+							fake.key.keysym.sym = SDLK_RETURN;
+							SDL_PushEvent(&fake);
+						} else {
+							focus = p;
+							sel[p] = row;
+						}
+					}
+					break;
+				}
+			}
+		}
+
+		set_color(ctx->renderer, COL_BG);
+		SDL_RenderClear(ctx->renderer);
+
+		{
+			const char *title = "ROSTER CHANGES";
+			int tw; int th;
+			TTF_SizeText(ctx->font_bold, title, &tw, &th);
+			draw_text(ctx, ctx->font_bold, title,
+					(win_width - tw) / 2, top_y - pad, COL_TITLE);
+		}
+
+		const char *titles[FOCUS_COUNT] = {
+			" Team Hitters ",
+			" Hitter Prospects ",
+			" Team Pitchers ",
+			" Pitcher Prospects "
+		};
+		for (int p = 0; p < FOCUS_COUNT; p++) {
+			if (focus == p)
+				draw_border(ctx->renderer, panels[p].x - 1, panels[p].y - 1, 
+						panels[p].w + 2, panels[p].h + 2, COL_HIGHLIGHT);
+			draw_panel(ctx, panels[p].x, panels[p].y, panels[p].w, panels[p].h, titles[p]);
+		}
+
+		// draw rows for roster and prospects
+		for (int i = 0; i < sel_team->n_hitters; i++) {
+			Hitter *h = sel_team->hitters[i];
+			Panel *pn = &panels[FOCUS_HITTER_ROSTER];
+			int ry = pn->y + content_off + i * row_height;
+			char buf[BUFFER_LEN];
+            snprintf(buf, sizeof(buf), "%s %s  AGE %d  CON %d  EYE %d  PWR %d  SPD %d",
+                     h->base.first_name, h->base.last_name, h->base.age, 
+					 h->ratings.contact, h->ratings.eye, h->ratings.power, h->ratings.speed);
+            bool highlighted = (focus == FOCUS_HITTER_ROSTER && sel[FOCUS_HITTER_ROSTER] == i);
+			bool active = hitter_roster_active[i];
+			if (highlighted)
+				fill_rect(ctx->renderer, pn->x + 2, ry, pn->w - 4, row_height, COL_HIGHLIGHT);
+			draw_text(ctx, ctx->font, buf, pn->x + 6, ry + 1, 
+					highlighted ? COL_HIGHLIGHT_TXT : active ? COL_SELECTED : COL_TEXT);
+		}
+
+		for (int i = 0; i < N_HITTER_PROSPECTS; i++) {
+			Hitter *h = hitter_prospects[i];
+			Panel *pn = &panels[FOCUS_HITTER_PROSPECTS];
+			int ry = pn->y + content_off + i * row_height;
+			char buf[BUFFER_LEN];
+            snprintf(buf, sizeof(buf), "%s %s  AGE %d  CON %d  EYE %d  PWR %d  SPD %d",
+                     h->base.first_name, h->base.last_name, h->base.age, 
+					 h->ratings.contact, h->ratings.eye, h->ratings.power, h->ratings.speed);
+            bool highlighted = (focus == FOCUS_HITTER_PROSPECTS && sel[FOCUS_HITTER_PROSPECTS] == i);
+			bool active = hitter_prospect_active[i];
+			if (highlighted)
+				fill_rect(ctx->renderer, pn->x + 2, ry, pn->w - 4, row_height, COL_HIGHLIGHT);
+			draw_text(ctx, ctx->font, buf, pn->x + 6, ry + 1, 
+					highlighted ? COL_HIGHLIGHT_TXT : active ? COL_SELECTED : COL_TEXT);
+		}
+
+		// pitcher roster rows
+		for (int i = 0; i < sel_team->n_pitchers; i++) {
+			Pitcher *p = sel_team->pitchers[i];
+			Panel *pn = &panels[FOCUS_PITCHER_ROSTER];
+			int ry = pn->y + content_off + i * row_height;
+			char buf[BUFFER_LEN];
+            snprintf(buf, sizeof(buf), "%s %s  AGE %d  CMD %d  STF %d  STA %d",
+                     p->base.first_name, p->base.last_name, p->base.age,
+                     p->ratings.command, p->ratings.stuff, p->ratings.stamina);
+            bool highlighted = (focus == FOCUS_PITCHER_ROSTER && sel[FOCUS_PITCHER_ROSTER] == i);
+			bool active = pitcher_roster_active[i];
+			if (highlighted)
+				fill_rect(ctx->renderer, pn->x + 2, ry, pn->w - 4, row_height, COL_HIGHLIGHT);
+			draw_text(ctx, ctx->font, buf, pn->x + 6, ry + 1, 
+					highlighted ? COL_HIGHLIGHT_TXT : active ? COL_SELECTED : COL_TEXT);
+		}
+
+		for (int i = 0; i < N_PITCHER_PROSPECTS; i++) {
+			Pitcher *p = pitcher_prospects[i];
+			Panel *pn = &panels[FOCUS_PITCHER_PROSPECTS];
+			int ry = pn->y + content_off + i * row_height;
+			char buf[BUFFER_LEN];
+            snprintf(buf, sizeof(buf), "%s %s  AGE %d  CMD %d  STF %d  STA %d",
+                     p->base.first_name, p->base.last_name, p->base.age,
+                     p->ratings.command, p->ratings.stuff, p->ratings.stamina);
+            bool highlighted = (focus == FOCUS_PITCHER_PROSPECTS && sel[FOCUS_PITCHER_PROSPECTS] == i);
+			bool active = pitcher_prospect_active[i];
+			if (highlighted)
+				fill_rect(ctx->renderer, pn->x + 2, ry, pn->w - 4, row_height, COL_HIGHLIGHT);
+			draw_text(ctx, ctx->font, buf, pn->x + 6, ry + 1, 
+					highlighted ? COL_HIGHLIGHT_TXT : active ? COL_SELECTED : COL_TEXT);
+		}
+
+		// validation error
+		if (validation_msg[0] != '\0') {
+			int vw, vh;
+			TTF_SizeText(ctx->font, validation_msg, &vw, &vh);
+			draw_text(ctx, ctx->font, validation_msg, 
+					(win_width - vw) / 2, win_height - vh * 2 - 10,
+					COL_URGENT);
+		}
+
+        const char *hint = "tab  cycle    j/k  navigate    space  toggle    enter  confirm";
+        int hw, hh;
+        TTF_SizeText(ctx->font, hint, &hw, &hh);
+        draw_text(ctx, ctx->font, hint, (win_width - hw) / 2, win_height - hh - 6, COL_DIM);
+
+        SDL_RenderPresent(ctx->renderer);
+        SDL_Delay(DEFAULT_DELAY);
+	}
+
+    // free any prospects that weren't used
+    for (size_t i = 0; i < N_HITTER_PROSPECTS; i++) {
+        if (hitter_prospects[i] && !hitter_prospect_active[i]) free_hitter(hitter_prospects[i]);
+	}
+
+    for (size_t i = 0; i < N_PITCHER_PROSPECTS; i++) {
+        if (pitcher_prospects[i] && !pitcher_prospect_active[i]) free_pitcher(pitcher_prospects[i]);
+	}
+
+	// reset records
+	reset_season(sim);
+	sdl_season_ui(ctx, sim);
+}
