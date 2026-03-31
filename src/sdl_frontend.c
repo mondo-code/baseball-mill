@@ -164,6 +164,7 @@ size_t sdl_main_menu(SDLCtx *ctx, const char **options, size_t n_options) {
 		SDL_Event e;
 		while (SDL_PollEvent(&e)) {
 			switch (e.type) {
+				case SDL_QUIT: exit(0);
 				case SDL_KEYDOWN:
 					switch(e.key.keysym.sym) {
 						case SDLK_DOWN: case SDLK_j:
@@ -263,6 +264,7 @@ const char *sdl_team_select(SDLCtx *ctx, Team **al_teams, size_t n_al, Team **nl
 		SDL_Event e;
 		while (SDL_PollEvent(&e)) {
 			switch(e.type) {
+				case SDL_QUIT: exit(0);
 				case SDL_KEYDOWN:
 					switch (e.key.keysym.sym) {
 						case SDLK_TAB:
@@ -438,7 +440,7 @@ static void draw_hitter_stats(SDLCtx *ctx, Panel p, Sim *s) {
     int cy    = p.y + ctx->font_height + 6;
     // column header
     draw_text(ctx, ctx->font,
-              "Name                     PA    AB   AVG    OBP    SLG    OPS     H   2B   3B   HR   BB  RBI",
+              "Name                   AVG    OBP    SLG    OPS     HR   BB   RBI",
               p.x + 6, cy, COL_DIM);
     cy += row_h + 2;
 
@@ -448,14 +450,12 @@ static void draw_hitter_stats(SDLCtx *ctx, Panel p, Sim *s) {
 		snprintf(name, sizeof(name), "%s %s", h->base.first_name, h->base.last_name);
         char buf[512];
         snprintf(buf, sizeof(buf),
-                 "%-22s %4d  %4d  .%03d   .%03d   .%03d   .%03d  %4d %4d %4d %4d %4d %4d",
+                 "%-22s .%03d   .%03d   .%03d   .%03d  %4d %4d %4d",
 				 name,
-                 h->stats.PA, h->stats.AB,
                  (int)(h->stats.AVG * 1000),
                  (int)(h->stats.OBP * 1000),
                  (int)(h->stats.SLG * 1000),
                  (int)(h->stats.OPS * 1000),
-                 h->stats.H, h->stats.H2, h->stats.H3,
                  h->stats.HR, h->stats.BB, h->stats.RBI);
         draw_text(ctx, ctx->font, buf, p.x + 6, cy, COL_TEXT);
         cy += row_h;
@@ -508,6 +508,7 @@ void sdl_season_ui(SDLCtx *ctx, Sim *sim) {
 		SDL_Event e;
 		while (SDL_PollEvent(&e)) {
 			switch (e.type) {
+				case SDL_QUIT: exit(0);
 				case SDL_KEYDOWN:
 					switch (e.key.keysym.sym) {
 						case SDLK_SPACE:
@@ -576,6 +577,7 @@ void sdl_world_series_ui(SDLCtx *ctx, Sim *sim) {
 		SDL_Event e;
 		while (SDL_PollEvent(&e)) {
 			switch (e.type) {
+				case SDL_QUIT: exit(0);
 				case SDL_KEYDOWN: case SDL_MOUSEBUTTONDOWN:
 					running = false;
 					break;
@@ -625,6 +627,7 @@ void sdl_season_end_ui(SDLCtx *ctx, Sim *sim) {
 	while (running) {
 		SDL_Event e;
 		while (SDL_PollEvent(&e)) {
+			if (e.type == SDL_QUIT) exit(0);
 			if (e.type == SDL_KEYDOWN) running = false;
 		}
 
@@ -713,6 +716,7 @@ void sdl_offseason_ui(SDLCtx *ctx, Sim *sim) {
 		SDL_Event e;
 		while (SDL_PollEvent(&e)) {
 			switch (e.type) {
+				case SDL_QUIT: exit(0);
 				case SDL_KEYDOWN:
 					switch (e.key.keysym.sym) {
 						case SDLK_ESCAPE:
