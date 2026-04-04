@@ -60,3 +60,41 @@ void add_innings(Innings *a, Innings *b) {
 	a->whole += new_third / 3;
 	a->thirds = new_third % 3;
 }
+
+// simplified implementation of baseball's aging curve adapted to player ratings
+// age multiplier: f(delta) = 1.0 - rate * delta^2
+static float age_multiplier(unsigned int age, unsigned int peak_age, float decline_rate) {
+	float delta = (float)age - (float)peak_age;
+	float rate = (delta < 0) ? decline_rate * 0.5f : decline_rate;
+	float mult = 1.0f - rate * (delta * delta);
+	if (mult > 1.0f) mult = 1.0f;
+	if (mult < 0.3f) mult = 0.3f;
+	return mult;
+}
+
+void hitter_age_curve(Hitter *h) {
+    unsigned int age = h->base.age;
+
+	// certain stats are meant to decline slower with age to be more realistic 
+	float contact_mult = age_multiplier(age, 20.0f, 0.0020f);
+    float power_mult   = age_multiplier(age, 29.0f, 0.0020f);
+    float eye_mult     = age_multiplier(age, 30.0f, 0.0010f);
+    float speed_mult   = age_multiplier(age, 26.0f, 0.0030f);
+
+    h->ratings.contact = (unsigned int)(h->ratings.contact * contact_mult);
+    h->ratings.power   = (unsigned int)(h->ratings.power   * power_mult);
+    h->ratings.eye     = (unsigned int)(h->ratings.eye     * eye_mult);
+    h->ratings.speed   = (unsigned int)(h->ratings.speed   * speed_mult);
+}
+
+void pitcher_age_curve(Pitcher *p) {
+    unsigned int age = p->base.age;
+
+	float command_mult	= age_multiplier(age, 30.0f, 0.0015f); 
+	float stuff_mult	= age_multiplier(age, 29.0f, 0.0030f);
+	float stamina_mult	= age_multiplier(age, 29.0f, 0.0020f); 
+
+	p->ratings.command	= (unsigned int)(p->ratings.command * command_mult);
+	p->ratings.stuff	= (unsigned int)(p->ratings.stuff * stuff_mult);
+	p->ratings.stamina	= (unsigned int)(p->ratings.stamina * stamina_mult);
+}

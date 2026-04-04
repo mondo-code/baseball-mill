@@ -29,7 +29,7 @@ void sim_hitter_stats(Hitter *h) {
 	// this keeps elite players from getting wildly unrealistic walk rates
 	double p_walk = clamp(p_walk_base * (1.0 - 0.3 * (h->ratings.eye / 99.0)));
 	double p_hit = clamp(avgBA + 0.003 * h->ratings.contact);
-	double p_hr = clamp(0.02 + 0.002 * h->ratings.power);
+	double p_hr = clamp(0.02 + 0.001 * h->ratings.power);
 	double p_sb = clamp(0.02 + 0.002 * h->ratings.speed);
 	double p_rbi = clamp(0.02 + 0.005 * h->ratings.power);
 
@@ -204,7 +204,7 @@ void sim_series(Series *s) {
 	size_t i;
 	for (i = 0; i < MAX_SERIES_MATCHES && s->t1_wins < max_wins && s->t2_wins < max_wins; i++) {
 		sim_match(&s->matches[i]);
-		s->t1_wins = t1->wins - t1_reg_wins; 
+		s->t1_wins = t1->wins - t1_reg_wins;
 		s->t2_wins = t2->wins - t2_reg_wins;
 	}
 	s->n_matches = i;
@@ -304,9 +304,9 @@ void reset_season(Sim *sim) {
 		Team *t = sim->al_teams[i];
 		t->wins = 0;
 		t->losses = 0;
-		for (int h = 0; h < t->n_hitters; h++) 
+		for (int h = 0; h < t->n_hitters; h++)
 			memset(&t->hitters[h]->stats, 0, sizeof(HitterStats));
-		for (int p = 0; p < t->n_pitchers; p++) 
+		for (int p = 0; p < t->n_pitchers; p++)
 			memset(&t->pitchers[p]->stats, 0, sizeof(PitcherStats));
 	}
 
@@ -314,9 +314,9 @@ void reset_season(Sim *sim) {
 		Team *t = sim->nl_teams[i];
 		sim->nl_teams[i]->wins = 0;
 		sim->nl_teams[i]->losses = 0;
-		for (int h = 0; h < t->n_hitters; h++) 
+		for (int h = 0; h < t->n_hitters; h++)
 			memset(&t->hitters[h]->stats, 0, sizeof(HitterStats));
-		for (int p = 0; p < t->n_pitchers; p++) 
+		for (int p = 0; p < t->n_pitchers; p++)
 			memset(&t->pitchers[p]->stats, 0, sizeof(PitcherStats));
 	}
 
@@ -341,4 +341,34 @@ const char *month_str(Month m) {
 			return "October";
 	}
 	return "None";
+}
+
+void age_curve_players(Sim *sim) {
+    for (int t = 0; t < sim->al_team_count; t++) {
+        Team *team = sim->al_teams[t];
+        for (int h = 0; h < team->n_hitters; h++) {
+            Hitter *hitter = team->hitters[h];
+            hitter->base.age += 1;
+            hitter_age_curve(hitter);
+        }
+        for (int p = 0; p < team->n_pitchers; p++) {
+            Pitcher *pitcher = team->pitchers[p];
+            pitcher->base.age += 1;
+            pitcher_age_curve(pitcher);
+        }
+    }
+
+    for (int t = 0; t < sim->nl_team_count; t++) {
+        Team *team = sim->nl_teams[t];
+        for (int h = 0; h < team->n_hitters; h++) {
+            Hitter *hitter = team->hitters[h];
+            hitter->base.age += 1;
+            hitter_age_curve(hitter);
+        }
+        for (int p = 0; p < team->n_pitchers; p++) {
+            Pitcher *pitcher = team->pitchers[p];
+            pitcher->base.age += 1;
+            pitcher_age_curve(pitcher);
+        }
+    }
 }

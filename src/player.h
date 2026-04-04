@@ -52,5 +52,7 @@ Pitcher *gen_pitcher(unsigned int age);
 void free_hitter(Hitter *h);
 void free_pitcher(Pitcher *p);
 void add_innings(Innings *a, Innings *b);
+void hitter_age_curve(Hitter *h);
+void pitcher_age_curve(Pitcher *p);
 
 #endif  // PLAYER_H
