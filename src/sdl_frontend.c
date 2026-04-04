@@ -399,8 +399,8 @@ const char *sdl_team_select(SDLCtx *ctx, Team **al_teams, size_t n_al, Team **nl
 #define NL_PANEL		3
 
 static Panel season_layout(int win_width, int win_height, int idx) {
-	int pad = 12;
-	int gap = 8;
+	int pad = 48;
+	int gap = 12;
 	int cols_right = 220;
 	int cols_left = win_width - cols_right - pad * 2 - gap;
 	int row_height = (win_height - pad * 2 - gap) / 2;
@@ -495,7 +495,7 @@ static void draw_season_footer(SDLCtx *ctx, int win_width, int win_height, Sim *
 	int hw, hh;
 	TTF_SizeText(ctx->font, hint, &hw, &hh);
 	draw_text(ctx, ctx->font, hint, (win_width - hw) / 2, win_height - hh - 16, COL_DIM);
-	draw_text(ctx, ctx->font, month_str(s->month), 16, win_height - hh - 16, COL_TITLE);
+	draw_text(ctx, ctx->font, month_str(s->month), 48, win_height - hh - 16, COL_TITLE);
 }
 
 void sdl_season_ui(SDLCtx *ctx, Sim *sim) {
@@ -516,7 +516,6 @@ void sdl_season_ui(SDLCtx *ctx, Sim *sim) {
 						case SDLK_KP_ENTER:
 							if (sim->month == OCTOBER) {
 								sdl_world_series_ui(ctx, sim);
-								/* sdl_season_end_ui(ctx, sim); */
 								running = false;
 							} else {
 								sim_month(sim);
