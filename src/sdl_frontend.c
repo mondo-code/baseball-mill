@@ -549,7 +549,7 @@ void sdl_season_ui(SDLCtx *ctx, Sim *sim) {
 }
 
 void sdl_world_series_ui(SDLCtx *ctx, Sim *sim) {
-	// pull the top finishers from AL and NL
+	// top finishers from AL and NL
 	Team *al_champ = sim->al_teams[0];
 	Team *nl_champ = sim->nl_teams[0];
 
@@ -620,31 +620,6 @@ void sdl_world_series_ui(SDLCtx *ctx, Sim *sim) {
 	sdl_offseason_ui(ctx, sim);
 }
 
-// this is a placeholder, offseason UI will be called instead of this
-void sdl_season_end_ui(SDLCtx *ctx, Sim *sim) {
-	bool running = true;
-	while (running) {
-		SDL_Event e;
-		while (SDL_PollEvent(&e)) {
-			if (e.type == SDL_QUIT) exit(0);
-			if (e.type == SDL_KEYDOWN) running = false;
-		}
-
-		int win_width, win_height;
-		SDL_GetWindowSize(ctx->window, &win_width, &win_height);
-		set_color(ctx->renderer, COL_BG);
-		SDL_RenderClear(ctx->renderer);
-
-		const char *msg = "Season complete";
-		int tw, th;
-		TTF_SizeText(ctx->font_bold, msg, &tw, &th);
-        draw_text(ctx, ctx->font_bold, msg,
-                  (win_width - tw) / 2, win_height / 2 - th, COL_TITLE);
-        SDL_RenderPresent(ctx->renderer);
-        SDL_Delay(DEFAULT_DELAY);
-	}
-}
-
 typedef enum {
 	FOCUS_HITTER_ROSTER = 0,
     FOCUS_HITTER_PROSPECTS,
@@ -653,6 +628,7 @@ typedef enum {
     FOCUS_COUNT
 } OffseasonFocus;
 
+// TODO: align stats into columns
 void sdl_offseason_ui(SDLCtx *ctx, Sim *sim) {
 	// generate prospects that the player can choose to replace players with
 	const size_t N_HITTER_PROSPECTS = 3;
