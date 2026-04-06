@@ -391,34 +391,6 @@ const char *sdl_team_select(SDLCtx *ctx, Team **al_teams, size_t n_al, Team **nl
 	return result;
 }
 
-// season UI panels
-#define N_SEASON_PANELS 4
-#define PITCHERS_PANEL	0
-#define AL_PANEL		1
-#define HITTERS_PANEL	2
-#define NL_PANEL		3
-
-static Panel season_layout(int win_width, int win_height, int idx) {
-	int pad = 48;
-	int gap = 12;
-	int cols_right = 220;
-	int cols_left = win_width - cols_right - pad * 2 - gap;
-	int row_height = (win_height - pad * 2 - gap) / 2;
-
-	int left_x = pad;
-	int right_x = pad + cols_left + gap;
-	int top_y = pad;
-	int bot_y = pad + row_height + gap;
-
-	Panel panels[N_SEASON_PANELS] = {
-		{ left_x, top_y, cols_left, row_height },
-		{ right_x, top_y, cols_right, row_height },
-		{ left_x, bot_y, cols_left, row_height },
-		{ right_x, bot_y, cols_right, row_height },
-	};
-	return panels[idx];
-}
-
 static void draw_standings(SDLCtx *ctx, Panel p, const char *title, Team **teams, int n_teams, Team *selected) {
 	draw_panel(ctx, p.x, p.y, p.w, p.h, title);
 	int row_h = ctx->font_height + 2;
@@ -504,6 +476,15 @@ void sdl_season_ui(SDLCtx *ctx, Sim *sim) {
 	while (running) {
 		int win_width, win_height;
 		SDL_GetWindowSize(ctx->window, &win_width, &win_height);
+		int pad = 48;
+		int gap = 12;
+		int cols_right = 220;
+		int cols_left = win_width - cols_right - pad * 2 - gap;
+		int row_height = (win_height - pad * 2 - gap) / 2;
+		int left_x = pad;
+		int right_x = pad + cols_left + gap;
+		int top_y = pad;
+		int bot_y = pad + row_height + gap;
 
 		SDL_Event e;
 		while (SDL_PollEvent(&e)) {
@@ -533,10 +514,10 @@ void sdl_season_ui(SDLCtx *ctx, Sim *sim) {
 		set_color(ctx->renderer, COL_BG);
 		SDL_RenderClear(ctx->renderer);
 
-		Panel pitchers_panel = season_layout(win_width, win_height, PITCHERS_PANEL);
-		Panel al_panel = season_layout(win_width, win_height, AL_PANEL);
-		Panel hitters_panel = season_layout(win_width, win_height, HITTERS_PANEL);
-		Panel nl_panel = season_layout(win_width, win_height, NL_PANEL);
+		Panel pitchers_panel = { left_x, top_y, cols_left, row_height }; 
+		Panel al_panel = { right_x, top_y, cols_right, row_height };
+		Panel hitters_panel = { left_x, bot_y, cols_left, row_height };
+		Panel nl_panel = { right_x, bot_y, cols_right, row_height };
 
 		draw_pitcher_stats(ctx, pitchers_panel, sim);
 		draw_hitter_stats(ctx, hitters_panel, sim);
