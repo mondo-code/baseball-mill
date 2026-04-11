@@ -17,6 +17,8 @@ typedef struct {
 	int				font_height;
 } SDLCtx;
 
+typedef struct { int x, y, w, h; } Panel;
+
 bool init_sdl_ctx(SDLCtx *ctx, const char *font_path, const char *font_bold_path, int win_width, int win_height);
 void destroy_sdl_ctx(SDLCtx *ctx);
 
