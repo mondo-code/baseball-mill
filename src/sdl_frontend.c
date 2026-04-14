@@ -38,7 +38,7 @@ bool init_sdl_ctx(
 	fprintf(stdout, "Initialized TTF\n");
 
 	ctx->window = SDL_CreateWindow(
-			"Baseball Mill v0.1",
+			"Baseball Mill",
 			SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 			win_width, win_height,
 			SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
@@ -433,11 +433,11 @@ static void draw_hitter_stats(SDLCtx *ctx, Panel *pn, Sim *s) {
 	TTF_SizeText(ctx->font, "A", &char_w, &char_h);
 
     int row_h = ctx->font_height + 2;
-    int cy = pn->y + ctx->font_height + 6;
+    int cy = pn->y + ctx->font_height - 8;
 	const int COUNTING_STAT_OFFSET = 3;
     // column header
 	draw_hitter_stats_header(ctx, pn, char_w);
-    cy += row_h + 2;
+    cy += row_h;
 	char buf[DEFAULT_BUFFER_LEN];
 
     for (int i = 0; i < s->selected_team->n_hitters && cy + row_h < pn->y + pn->h; i++) {
@@ -482,15 +482,15 @@ static void draw_pitcher_stats_header(SDLCtx *ctx, Panel *p, int char_w) {
 }
 
 static void draw_pitcher_stats(SDLCtx *ctx, Panel *pn, Sim *s) {
-    draw_panel(ctx, pn->x, pn->y, pn->w, pn->h, " Hitter Stats ");
+    draw_panel(ctx, pn->x, pn->y, pn->w, pn->h, " Pitcher Stats ");
 	int char_h, char_w;
 	TTF_SizeText(ctx->font, "A", &char_w, &char_h);
 
     int row_h = ctx->font_height + 2;
-    int cy    = pn->y + ctx->font_height + 6;
+    int cy    = pn->y + ctx->font_height - 8;
     // column header
 	draw_pitcher_stats_header(ctx, pn, char_w);
-    cy += row_h + 2;
+    cy += row_h;
 	char buf[DEFAULT_BUFFER_LEN];
 
     for (int i = 0; i < s->selected_team->n_pitchers && cy + row_h < pn->y + pn->h; i++) {
@@ -785,7 +785,7 @@ void sdl_offseason_ui(SDLCtx *ctx, Sim *sim) {
 		};
 
 		int row_height = ctx->font_height + 4;
-		int content_off = ctx->font_height + 6;
+		int content_off = ctx->font_height + 16;
 
 		SDL_Event e;
 		while (SDL_PollEvent(&e)) {
