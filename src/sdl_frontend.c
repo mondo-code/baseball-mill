@@ -343,20 +343,12 @@ const char *sdl_team_select(SDLCtx *ctx, Team **al_teams, size_t n_al, Team **nl
 				}
 			}
 		}
-		// draw
 		set_color(ctx->renderer, COL_BG);
 		SDL_RenderClear(ctx->renderer);
 
 		draw_screen_title(ctx, "SELECT YOUR TEAM", win_width, panel_y - 12, COL_TITLE); 
-
-		// footer 
-		// {
 		const char *hint = "arrows/vim keys to move  |  tab to switch league  |  enter or click to confirm";
-		// 	int hw; int hh;
-		// 	TTF_SizeText(ctx->font, hint, &hw, &hh);
-		// 	draw_text(ctx, ctx->font, hint, (win_width - hw) / 2, panel_y + panel_height + 10, COL_DIM);
-		// }
-		draw_screen_footer(ctx, hint, win_width, panel_y + panel_height, COL_DIM);
+		draw_screen_footer(ctx, hint, win_width, panel_y + panel_height + 32, COL_DIM);
 
 		// AL panel
 		// border is drawn before panel so the border doesn't go over title
