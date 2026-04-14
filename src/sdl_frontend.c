@@ -659,6 +659,8 @@ void sdl_world_series_ui(SDLCtx *ctx, Sim *sim) {
 		SDL_Delay(DEFAULT_DELAY);
 	}
 
+	// age curve before roster changes to not deceive the player
+	age_curve_players(sim);
 	sdl_offseason_ui(ctx, sim);
 }
 
@@ -1005,9 +1007,6 @@ void sdl_offseason_ui(SDLCtx *ctx, Sim *sim) {
 
 		// footer
         const char *hint = "tab  cycle to next panel    arrows or j/k  navigate    space  toggle    enter  confirm";
-        // int hw, hh;
-        // TTF_SizeText(ctx->font, hint, &hw, &hh);
-        // draw_text(ctx, ctx->font, hint, (win_width - hw) / 2, win_height - hh - 6, COL_DIM);
 		draw_screen_footer(ctx, hint, win_width, win_height - 6, COL_DIM);
 
         SDL_RenderPresent(ctx->renderer);
@@ -1023,8 +1022,6 @@ void sdl_offseason_ui(SDLCtx *ctx, Sim *sim) {
         if (pitcher_prospects[i] && !pitcher_prospect_active[i]) free_pitcher(pitcher_prospects[i]);
 	}
 
-	// reset records
-	reset_season(sim);
-	age_curve_players(sim);
+	sim_offseason(sim);
 	sdl_season_ui(ctx, sim);
 }

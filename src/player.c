@@ -98,3 +98,11 @@ void pitcher_age_curve(Pitcher *p) {
 	p->ratings.stuff	= (unsigned int)(p->ratings.stuff * stuff_mult);
 	p->ratings.stamina	= (unsigned int)(p->ratings.stamina * stamina_mult);
 }
+
+unsigned int total_hitter_rating(Hitter *h) {
+	return (h->ratings.contact + h->ratings.eye + h->ratings.power + h->ratings.speed);
+}
+
+unsigned int total_pitcher_rating(Pitcher *p) {
+	return (p->ratings.command + p->ratings.stamina + p->ratings.stuff);
+}

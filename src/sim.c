@@ -299,7 +299,8 @@ void gen_month_schedule(Sim *sim) {
     }
 }
 
-void reset_season(Sim *sim) {
+void sim_offseason(Sim *sim) {
+	// reset records
 	for (int i = 0; i < N_AL_TEAMS; i++) {
 		Team *t = sim->al_teams[i];
 		t->wins = 0;
@@ -319,6 +320,12 @@ void reset_season(Sim *sim) {
 		for (int p = 0; p < t->n_pitchers; p++)
 			memset(&t->pitchers[p]->stats, 0, sizeof(PitcherStats));
 	}
+
+	// automated roster changes for non-user teams
+	for (size_t i = 0; i < N_AL_TEAMS; i++)
+		if (sim->al_teams[i] != sim->selected_team) automatic_roster_changes(sim->al_teams[i]);
+	for (size_t i = 0; i < N_NL_TEAMS; i++)
+		if (sim->nl_teams[i] != sim->selected_team) automatic_roster_changes(sim->nl_teams[i]);
 
 	sim->month = APRIL;
 }

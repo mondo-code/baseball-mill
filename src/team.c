@@ -115,7 +115,7 @@ unsigned int get_hitters_rating(Team *team) {
 	unsigned int total = 0;
 	for (int i = 0; i < team->n_hitters; i++) {
 		Hitter *h = team->hitters[i];
-		total += (h->ratings.contact + h->ratings.eye + h->ratings.power + h->ratings.speed);
+		total += total_hitter_rating(h);
 	}
 	return total / team->n_hitters;
 }
@@ -124,9 +124,34 @@ unsigned int get_pitchers_rating(Team *team) {
 	unsigned int total = 0;
 	for (int i = 0; i < team->n_pitchers; i++) {
 		Pitcher *p = team->pitchers[i];
-		total += (p->ratings.command + p->ratings.stamina + p->ratings.stuff);
+		total += total_pitcher_rating(p);
 	}
 	return total / team->n_pitchers;
+}
+
+void automatic_roster_changes(Team *team) {
+	const unsigned int PITCHER_REPLACEMENT_THRESHOLD = 100;
+	const unsigned int HITTER_REPLACEMENT_THRESHOLD = 120;
+	unsigned int replaced_hitters = 0;
+	unsigned int replaced_pitchers = 0;
+
+	for (size_t j = 0; j < team->n_hitters && replaced_hitters < 3; j++) {
+		Hitter *h = team->hitters[j];
+		if (total_hitter_rating(h) <= HITTER_REPLACEMENT_THRESHOLD) {
+			team->hitters[j] = gen_hitter(random_int_range(18, 24));
+			replaced_hitters++;
+			free_hitter(h);
+		}
+	}
+
+	for (size_t j = 0; j < team->n_pitchers && replaced_pitchers < 2; j++) {
+		Pitcher *p = team->pitchers[j];
+		if (total_pitcher_rating(p) <= PITCHER_REPLACEMENT_THRESHOLD) {
+			team->pitchers[j] = gen_pitcher(random_int_range(18, 24));
+			replaced_pitchers++;
+			free_pitcher(p);
+		}
+	}
 }
 
 // functions for descending order quicksort
