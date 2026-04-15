@@ -515,14 +515,6 @@ static void draw_pitcher_stats(SDLCtx *ctx, Panel *pn, Sim *s) {
     }
 }
 
-static void draw_season_footer(SDLCtx *ctx, int win_width, int win_height, Sim *s) {
-	const char *hint = "press enter to advance month";
-	int hw, hh;
-	TTF_SizeText(ctx->font, hint, &hw, &hh);
-	draw_text(ctx, ctx->font, hint, (win_width - hw) / 2, win_height - hh - 16, COL_DIM);
-	draw_text(ctx, ctx->font, month_str(s->month), 48, win_height - hh - 16, COL_TITLE);
-}
-
 void sdl_season_ui(SDLCtx *ctx, Sim *sim) {
 	bool running = true;
 
@@ -576,7 +568,9 @@ void sdl_season_ui(SDLCtx *ctx, Sim *sim) {
 		draw_hitter_stats(ctx, &hitters_panel, sim);
 		draw_standings(ctx, al_panel, "AL Standings", sim->al_teams, sim->al_team_count, sim->selected_team);
 		draw_standings(ctx, nl_panel, "NL Standings", sim->nl_teams, sim->nl_team_count, sim->selected_team);
-		draw_season_footer(ctx, win_width, win_height, sim);
+
+		draw_screen_title(ctx, month_str(sim->month), win_width, top_y - gap, COL_TITLE);
+		draw_screen_footer(ctx, "press enter to advance month", win_width, win_height - 12, COL_DIM);
 		SDL_RenderPresent(ctx->renderer);
 		SDL_Delay(DEFAULT_DELAY);
 	}
