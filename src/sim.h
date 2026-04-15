@@ -56,6 +56,7 @@ typedef struct {
 	Month month;
 	Match matches[GAMES_PER_MONTH];
 	size_t n_matches;
+	unsigned int current_year;
 } Sim;
 
 int binom_draw(int n, double p);

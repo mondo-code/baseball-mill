@@ -120,6 +120,7 @@ Sim *init_sim(Team **al_teams, Team **nl_teams, const char *selected_team) {
 	s->al_team_count = N_AL_TEAMS;
 	s->nl_team_count = N_NL_TEAMS;
 	s->month = APRIL;
+	s->current_year = 2000;
 
 	for (int i = 0; i < N_AL_TEAMS; i++) {
 		if (strcmp(s->al_teams[i]->name, selected_team) == 0) {
@@ -328,6 +329,7 @@ void sim_offseason(Sim *sim) {
 		if (sim->nl_teams[i] != sim->selected_team) automatic_roster_changes(sim->nl_teams[i]);
 
 	sim->month = APRIL;
+	sim->current_year++;
 }
 
 const char *month_str(Month m) {

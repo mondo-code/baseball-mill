@@ -569,7 +569,9 @@ void sdl_season_ui(SDLCtx *ctx, Sim *sim) {
 		draw_standings(ctx, al_panel, "AL Standings", sim->al_teams, sim->al_team_count, sim->selected_team);
 		draw_standings(ctx, nl_panel, "NL Standings", sim->nl_teams, sim->nl_team_count, sim->selected_team);
 
-		draw_screen_title(ctx, month_str(sim->month), win_width, top_y - gap, COL_TITLE);
+		char season_header[32];
+		snprintf(season_header, sizeof(season_header), "%s %d", month_str(sim->month), sim->current_year);
+		draw_screen_title(ctx, season_header, win_width, top_y - gap, COL_TITLE);
 		draw_screen_footer(ctx, "press enter to advance month", win_width, win_height - 12, COL_DIM);
 		SDL_RenderPresent(ctx->renderer);
 		SDL_Delay(DEFAULT_DELAY);
