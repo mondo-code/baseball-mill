@@ -974,7 +974,7 @@ void sdl_offseason_ui(SDLCtx *ctx, Sim *sim) {
 		for (int i = 0; i < N_PITCHER_PROSPECTS; i++) {
 			Pitcher *p = pitcher_prospects[i];
             bool highlighted = (focus == FOCUS_PITCHER_PROSPECTS && sel[FOCUS_PITCHER_PROSPECTS] == i);
-			bool active = pitcher_roster_active[i];
+			bool active = pitcher_prospect_active[i];
 			SDL_Color col = (highlighted ? COL_HIGHLIGHT_TXT : active ? COL_SELECTED : COL_TEXT);
 			int ry = pn->y + content_off + i * row_height;
 			if (highlighted)
