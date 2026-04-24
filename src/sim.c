@@ -277,21 +277,18 @@ void gen_month_schedule(Sim *sim) {
 }
 
 // helper for setting team records to 0 and resetting player stats
-// TODO: only add career stats for user team, it's never shown for other teams
-static void reset_teams(Team **teams, size_t n_teams) {
+static void reset_teams_stats(Team **teams, size_t n_teams) {
 	for (int i = 0; i < n_teams; i++) {
 		Team *t = teams[i];
 		t->wins = 0;
 		t->losses = 0;
 		for (int j = 0; j < t->n_hitters; j++) {
 			Hitter *h = t->hitters[j];
-			add_hitter_stats(&h->career_stats, &h->season_stats);
 			memset(&h->season_stats, 0, sizeof(HitterStats));
 		}
 		for (int j = 0; j < t->n_pitchers; j++) {
 			Pitcher *p = t->pitchers[j];
-			add_pitcher_stats(&p->career_stats, &p->season_stats);
-			memset(&t->pitchers[j]->season_stats, 0, sizeof(PitcherStats));
+			memset(&p->season_stats, 0, sizeof(PitcherStats));
 		}
 	}
 }
@@ -364,9 +361,22 @@ static void update_top_pitchers(Sim *sim) {
 }
 
 void sim_offseason(Sim *sim) {
+	// add to career stats for user team
+	// it's pointless to do this for other teams because it's never shown
+	Team *user = sim->selected_team;
+	for (int i = 0; i < user->n_hitters; i++) {
+		Hitter *h = user->hitters[i];
+		add_hitter_stats(&h->career_stats, &h->season_stats);
+	}
+
+	for (int i = 0; i < user->n_pitchers ; i++) {
+		Pitcher *p = user->pitchers[i];
+		add_pitcher_stats(&p->career_stats, &p->season_stats);
+	}
+
 	// reset records
-	reset_teams(sim->al_teams, N_AL_TEAMS);
-	reset_teams(sim->nl_teams, N_NL_TEAMS);
+	reset_teams_stats(sim->al_teams, N_AL_TEAMS);
+	reset_teams_stats(sim->nl_teams, N_NL_TEAMS);
 	update_top_hitters(sim);
 	update_top_pitchers(sim);
 
