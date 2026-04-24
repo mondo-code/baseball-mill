@@ -11,8 +11,8 @@
 typedef struct Team {
     const char* name;
 	const char* short_name;
-    Hitter** hitters;
-	Pitcher** pitchers;
+    Hitter* hitters[MAX_HITTERS];
+	Pitcher* pitchers[MAX_PITCHERS];
 	size_t n_hitters;
 	size_t n_pitchers;
 	size_t next_pitcher;

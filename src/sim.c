@@ -7,112 +7,6 @@
 #include "team.h"
 #include "utils.h"
 
-// weighted splits for doubles, triples, homers for random gen
-const double w2B = 0.60, w3B = 0.05;
-const double avgBA = 0.240;
-const char* team_names[] = TEAM_NAMES;
-const char* team_short_names[] = TEAM_SHORT_NAMES;
-
-int binom_draw(int n, double p) {
-    int k = 0;
-    for (int i = 0; i < n; i++)
-        if ((double)rand() / RAND_MAX < p) k++;
-    return k;
-}
-
-void sim_hitter_stats(Hitter *h) {
-	HitterStats *hs = &(h->stats);
-	// yes, sorry, these constants used to make the stats more realistic are magic numbers
-	// they don't really represent anything so it would be awkward to try to name them as constants
-	// define probabilities for binomial draws
-	double p_walk_base = clamp(0.02 + 0.0015 * h->ratings.eye);
-	// this keeps elite players from getting wildly unrealistic walk rates
-	double p_walk = clamp(p_walk_base * (1.0 - 0.3 * (h->ratings.eye / 99.0)));
-	double p_hit = clamp(avgBA + 0.003 * h->ratings.contact);
-	double p_hr = clamp(0.02 + 0.001 * h->ratings.power);
-	double p_sb = clamp(0.02 + 0.002 * h->ratings.speed);
-	double p_rbi = clamp(0.02 + 0.005 * h->ratings.power);
-
-	// generate counting stats for this sim
-	unsigned int plate_appearances = random_int_range(4, 5);
-	unsigned int walks = binom_draw(plate_appearances, p_walk);
-	unsigned int at_bats = plate_appearances - walks;
-	unsigned int hits = binom_draw(at_bats, p_hit);
-	unsigned int homers = binom_draw(hits, p_hr);
-	unsigned int xb = hits - homers;
-	unsigned int doubles = (unsigned int)xb * w2B;
-	unsigned int triples = (unsigned int)xb * w3B;
-	unsigned int on_base = hits + walks;
-	unsigned int stolen_bases = binom_draw(on_base, p_sb);
-	unsigned int rbi = homers + binom_draw(hits, p_rbi);
-
-	// increment counting stats
-	hs->GP++;
-	hs->PA += plate_appearances;
-	hs->AB += (plate_appearances - walks);
-	hs->BB += walks;
-	hs->H += hits;
-	hs->H2 += doubles;
-	hs->H3 += triples;
-	hs->HR += homers;
-	hs->SB += stolen_bases;
-	hs->RBI += rbi;
-
-	// recalculate average stats
-	if (hs->AB > 0) {
-		hs->AVG = (double)hs->H / hs->AB;
-		hs->OBP = (double)(hs->H + hs->BB) / (hs->AB + hs->BB);
-		hs->SLG = (double)((hs->H - hs->H2 - hs->H3 - hs->HR)
-				+ 2*hs->H2 + 3*hs->H3 + 4*hs->HR) / hs->AB;
-	} else {
-		hs->AVG = 0.0;
-		hs->OBP = 0.0;
-		hs->SLG = 0.0;
-	}
-	hs->OPS = hs->OBP + hs->SLG;
-}
-
-void sim_pitcher_stats(Pitcher *p) {
-	PitcherStats *ps = &(p->stats);
-	// generate probabilities
-	unsigned int bf = round(15.0 + 0.1 * p->ratings.stamina);
-	// generate probability of contact outs and strikeouts, binomial draw them
-	// both over BF. contact outs should be a LC w/ command and strikeouts
-	// should be a LC w/ stuff
-
-	double p_walk = clamp(0.16 - 0.0016 * p->ratings.command);
-	if (p_walk == 0.0) { p_walk = 0.06; }
-	double p_contact_out = clamp(0.4 + 0.002 * p->ratings.command);
-	if (p_contact_out > 0.5) { p_contact_out = 0.5; }
-	double p_strikeout = clamp(0.08 + 0.005 * p->ratings.stuff);
-	if (p_strikeout > 0.5) { p_strikeout = 0.5; }
-	if (p_strikeout < 0.15) { p_strikeout = 0.15; }
-	double p_runs = clamp(0.7 - (0.005 * p->ratings.stuff) - (0.005 * p->ratings.command));
-	if (p_runs < 0.2) { p_runs = 0.2; }
-
-	// binomial draws and stats for this sim
-	unsigned int walks = binom_draw(bf, p_walk);
-	unsigned int contact_sample = bf - walks;
-	unsigned int contact_outs = binom_draw(contact_sample, p_contact_out);
-	unsigned int strikeout_sample = contact_sample - contact_outs;
-	unsigned int strikeouts = binom_draw(strikeout_sample, p_strikeout);
-	unsigned int outs = contact_outs + strikeouts;
-	unsigned int hits_allowed = bf - (walks + outs);
-	unsigned int runs = binom_draw(hits_allowed + walks, p_runs);
-	Innings ip = { .whole = outs / 3, .thirds = outs % 3 };
-	add_innings(&ps->IP, &ip);
-
-	// increment counting, recalculate average stats
-	ps->BBA += walks;
-	ps->ER += runs;
-	ps->GS++;
-	ps->BF += bf;
-	ps->HA += hits_allowed;
-	ps->SO += strikeouts;
-    double ip_total = (double)ps->IP.whole + (ps->IP.thirds / 3.0);
-    ps->ERA = (ip_total > 0.0) ? (ps->ER / ip_total) * 9.0 : 0.0;
-}
-
 Sim *init_sim(Team **al_teams, Team **nl_teams, const char *selected_team) {
 	Sim *s = calloc(1, sizeof(Sim));
 	s->al_teams = al_teams;
@@ -121,6 +15,9 @@ Sim *init_sim(Team **al_teams, Team **nl_teams, const char *selected_team) {
 	s->nl_team_count = N_NL_TEAMS;
 	s->month = APRIL;
 	s->current_year = 2000;
+	s->sel_ws_won = 0;
+	s->n_top_hitters = 0;
+	s->n_top_pitchers = 0;
 
 	for (int i = 0; i < N_AL_TEAMS; i++) {
 		if (strcmp(s->al_teams[i]->name, selected_team) == 0) {
@@ -138,6 +35,85 @@ Sim *init_sim(Team **al_teams, Team **nl_teams, const char *selected_team) {
 
 	if (!s->selected_team) { perror("Error while designating selected team"); exit(1); }
 	return s;
+}
+
+// weighted splits for doubles, triples, homers for random gen
+const double w2B = 0.60, w3B = 0.05;
+const double avgBA = 0.240;
+const char* team_names[] = TEAM_NAMES;
+const char* team_short_names[] = TEAM_SHORT_NAMES;
+
+int binom_draw(int n, double p) {
+    int k = 0;
+    for (int i = 0; i < n; i++)
+        if ((double)rand() / RAND_MAX < p) k++;
+    return k;
+}
+
+void sim_hitter_stats(Hitter *h) {
+	HitterStats game_stats = (HitterStats){0};
+	HitterStats *hs = &(h->season_stats);
+	// yes, sorry, these constants used to make the stats more realistic are magic numbers
+	// they don't really represent anything so it would be awkward to try to name them as constants
+	// define probabilities for binomial draws
+	double p_walk_base = clamp(0.02 + 0.0015 * h->ratings.eye);
+	// this keeps elite players from getting wildly unrealistic walk rates
+	double p_walk = clamp(p_walk_base * (1.0 - 0.3 * (h->ratings.eye / 99.0)));
+	double p_hit = clamp(avgBA + 0.003 * h->ratings.contact);
+	double p_hr = clamp(0.02 + 0.001 * h->ratings.power);
+	double p_sb = clamp(0.02 + 0.002 * h->ratings.speed);
+	double p_rbi = clamp(0.02 + 0.005 * h->ratings.power);
+
+	// generate counting stats for this sim
+	game_stats.GP = 1;
+	game_stats.PA = random_int_range(4, 5);
+	game_stats.BB = binom_draw(game_stats.PA, p_walk);
+	game_stats.AB = game_stats.PA - game_stats.BB;
+	game_stats.H = binom_draw(game_stats.AB, p_hit);
+	game_stats.HR = binom_draw(game_stats.H, p_hr);
+	unsigned int xb = game_stats.H - game_stats.HR;
+	game_stats.H2 = (unsigned int)xb * w2B;
+	game_stats.H3 = (unsigned int)xb * w3B;
+	unsigned int on_base = game_stats.H + game_stats.BB;
+	game_stats.SB = binom_draw(on_base, p_sb);
+	game_stats.RBI = game_stats.HR + binom_draw(game_stats.H, p_rbi);
+
+	add_hitter_stats(hs, &game_stats);
+}
+
+void sim_pitcher_stats(Pitcher *p) {
+	PitcherStats game_stats = (PitcherStats){0};
+	PitcherStats *ps = &(p->season_stats);
+	// generate probabilities
+	game_stats.GS = 1;
+	game_stats.BF = round(15.0 + 0.1 * p->ratings.stamina);
+	// generate probability of contact outs and strikeouts, binomial draw them
+	// both over BF. contact outs should be a LC w/ command and strikeouts
+	// should be a LC w/ stuff
+
+	double p_walk = clamp(0.16 - 0.0016 * p->ratings.command);
+	if (p_walk == 0.0) { p_walk = 0.06; }
+	double p_contact_out = clamp(0.4 + 0.002 * p->ratings.command);
+	if (p_contact_out > 0.5) { p_contact_out = 0.5; }
+	double p_strikeout = clamp(0.08 + 0.005 * p->ratings.stuff);
+	if (p_strikeout > 0.5) { p_strikeout = 0.5; }
+	if (p_strikeout < 0.15) { p_strikeout = 0.15; }
+	double p_runs = clamp(0.7 - (0.005 * p->ratings.stuff) - (0.005 * p->ratings.command));
+	if (p_runs < 0.2) { p_runs = 0.2; }
+
+	// binomial draws and stats for this sim
+	game_stats.BBA = binom_draw(game_stats.BF, p_walk);
+	unsigned int contact_sample = game_stats.BF - game_stats.BBA;
+	unsigned int contact_outs = binom_draw(contact_sample, p_contact_out);
+	unsigned int strikeout_sample = contact_sample - contact_outs;
+	game_stats.SO = binom_draw(strikeout_sample, p_strikeout);
+	unsigned int outs = contact_outs + game_stats.SO;
+	game_stats.HA = game_stats.BF - (game_stats.BBA + outs);
+	game_stats.ER = binom_draw(game_stats.HA + game_stats.BBA, p_runs);
+	Innings ip = { .whole = outs / 3, .thirds = outs % 3 };
+	game_stats.IP = ip;
+
+	add_pitcher_stats(ps, &game_stats);
 }
 
 void sim_match(Match *m) {
@@ -300,32 +276,104 @@ void gen_month_schedule(Sim *sim) {
     }
 }
 
-void sim_offseason(Sim *sim) {
-	// reset records
-	for (int i = 0; i < N_AL_TEAMS; i++) {
-		Team *t = sim->al_teams[i];
+// helper for setting team records to 0 and resetting player stats
+// TODO: only add career stats for user team, it's never shown for other teams
+static void reset_teams(Team **teams, size_t n_teams) {
+	for (int i = 0; i < n_teams; i++) {
+		Team *t = teams[i];
 		t->wins = 0;
 		t->losses = 0;
-		for (int h = 0; h < t->n_hitters; h++)
-			memset(&t->hitters[h]->stats, 0, sizeof(HitterStats));
-		for (int p = 0; p < t->n_pitchers; p++)
-			memset(&t->pitchers[p]->stats, 0, sizeof(PitcherStats));
+		for (int j = 0; j < t->n_hitters; j++) {
+			Hitter *h = t->hitters[j];
+			add_hitter_stats(&h->career_stats, &h->season_stats);
+			memset(&h->season_stats, 0, sizeof(HitterStats));
+		}
+		for (int j = 0; j < t->n_pitchers; j++) {
+			Pitcher *p = t->pitchers[j];
+			add_pitcher_stats(&p->career_stats, &p->season_stats);
+			memset(&t->pitchers[j]->season_stats, 0, sizeof(PitcherStats));
+		}
 	}
+}
 
-	for (int i = 0; i < N_NL_TEAMS; i++) {
-		Team *t = sim->nl_teams[i];
-		sim->nl_teams[i]->wins = 0;
-		sim->nl_teams[i]->losses = 0;
-		for (int h = 0; h < t->n_hitters; h++)
-			memset(&t->hitters[h]->stats, 0, sizeof(HitterStats));
-		for (int p = 0; p < t->n_pitchers; p++)
-			memset(&t->pitchers[p]->stats, 0, sizeof(PitcherStats));
+// helpers for inserting players into the top players list by insertion sort approach
+static void update_top_hitters(Sim *sim) {
+	Team *sel = sim->selected_team;
+	for (int i = 0; i < sel->n_hitters; i++) {
+		Hitter *h = sel->hitters[i];
+
+		// find insertion index
+		int j = sim->n_top_hitters - 1;
+		while (j >= 0 && h->career_stats.H > sim->top_hitters[j]->career_stats.H) j--;
+		int ins = j + 1;
+		if (ins >= N_TOP_PLAYERS) continue;
+
+		// check if player is already in the top list and remove them first
+		for (int k = 0; k < sim->n_top_hitters; k++) {
+			if (sim->top_hitters[k] == h) {
+				// shift everyone above k down
+				for (int m = k; m < sim->n_top_hitters - 1; m++)
+					sim->top_hitters[m] = sim->top_hitters[m+1];
+				sim->n_top_hitters--;
+				if (ins > 0) ins--;
+				break;
+			}
+		}
+
+		int end = sim->n_top_hitters < N_TOP_PLAYERS ? sim->n_top_hitters : N_TOP_PLAYERS - 1;
+		for (int k = end; k > ins; k--)
+			sim->top_hitters[k] = sim->top_hitters[k-1];
+
+		// copying ensures no dangling pointer if the player owned by the team is freed
+		sim->top_hitters[ins] = copy_hitter(h);
+		if (sim->n_top_hitters < N_TOP_PLAYERS) sim->n_top_hitters++;
 	}
+}
+
+static void update_top_pitchers(Sim *sim) {
+	Team *sel = sim->selected_team;
+	for (int i = 0; i < sel->n_pitchers; i++) {
+		Pitcher *p = sel->pitchers[i];
+
+		// find insertion index
+		int j = sim->n_top_pitchers - 1;
+		while (j >= 0 && p->career_stats.SO > sim->top_pitchers[j]->career_stats.SO) j--;
+		int ins = j + 1;
+		if (ins >= N_TOP_PLAYERS) continue;
+
+		// check if player is already in the top list and remove them first
+		for (int k = 0; k < sim->n_top_pitchers; k++) {
+			if (sim->top_pitchers[k] == p) {
+				// shift everyone above k down
+				for (int m = k; m < sim->n_top_pitchers - 1; m++)
+					sim->top_pitchers[m] = sim->top_pitchers[m+1];
+				sim->n_top_pitchers--;
+				if (ins > 0) ins--;
+				break;
+			}
+		}
+
+		int end = sim->n_top_pitchers < N_TOP_PLAYERS ? sim->n_top_pitchers : N_TOP_PLAYERS - 1;
+		for (int k = end; k > ins; k--)
+			sim->top_pitchers[k] = sim->top_pitchers[k-1];
+
+		// sim->top_pitchers[ins] = p;
+		sim->top_pitchers[ins] = copy_pitcher(p);
+		if (sim->n_top_pitchers < N_TOP_PLAYERS) sim->n_top_pitchers++;
+	}
+}
+
+void sim_offseason(Sim *sim) {
+	// reset records
+	reset_teams(sim->al_teams, N_AL_TEAMS);
+	reset_teams(sim->nl_teams, N_NL_TEAMS);
+	update_top_hitters(sim);
+	update_top_pitchers(sim);
 
 	// automated roster changes for non-user teams
-	for (size_t i = 0; i < N_AL_TEAMS; i++)
+	for (int i = 0; i < N_AL_TEAMS; i++)
 		if (sim->al_teams[i] != sim->selected_team) automatic_roster_changes(sim->al_teams[i]);
-	for (size_t i = 0; i < N_NL_TEAMS; i++)
+	for (int i = 0; i < N_NL_TEAMS; i++)
 		if (sim->nl_teams[i] != sim->selected_team) automatic_roster_changes(sim->nl_teams[i]);
 
 	sim->month = APRIL;

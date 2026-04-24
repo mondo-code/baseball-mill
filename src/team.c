@@ -10,17 +10,6 @@ Team *init_team(const char* name, const char* short_name) {
 	Team *team = calloc(1, sizeof(Team));  // zero initializes everything
 	team->name = strdup(name);
 	team->short_name = strdup(short_name);
-	team->hitters = calloc(MAX_HITTERS, sizeof(Hitter));
-	team->pitchers = calloc(MAX_PITCHERS, sizeof(Pitcher));
-
-	if (!team->hitters || !team->pitchers) {
-		free((void *)team->name);
-		free((void *)team->short_name);
-		free(team->hitters);
-		free(team->pitchers);
-		free(team);
-		return NULL;
-	}
 
 	gen_roster(team);
 	return team;
@@ -103,10 +92,6 @@ void destroy_team(Team *team) {
 		free(team->pitchers[j]);
 		team->pitchers[j] = NULL;
 	}
-	free(team->hitters);
-	free(team->pitchers);
-	team->hitters = NULL;
-	team->pitchers = NULL;
 }
 
 // these functions get the average of the ratings of the hitter and pitcher groups

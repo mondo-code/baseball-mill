@@ -16,6 +16,7 @@
 #define N_NL_TEAMS 8
 #define N_MONTHS 6
 #define N_GAMES 162
+#define N_TOP_PLAYERS 10
 #define GAMES_PER_MONTH 216
 #define GAMES_PER_TEAM 27
 #define MAX_SERIES_MATCHES 7
@@ -51,18 +52,23 @@ typedef struct {
 	Team **al_teams;
 	Team **nl_teams;
 	Team *selected_team;
+	unsigned int sel_ws_won;
 	size_t al_team_count;
 	size_t nl_team_count;
 	Month month;
 	Match matches[GAMES_PER_MONTH];
 	size_t n_matches;
 	unsigned int current_year;
+	Hitter* top_hitters[N_TOP_PLAYERS];
+	size_t n_top_hitters;
+	Pitcher* top_pitchers[N_TOP_PLAYERS];
+	size_t n_top_pitchers; 
 } Sim;
 
+Sim *init_sim(Team **al_teams, Team **nl_teams, const char *selected_team);
 int binom_draw(int n, double p);
 void sim_hitter_stats(Hitter *h);
 void sim_pitcher_stats(Pitcher *p);
-Sim *init_sim(Team **al_teams, Team **nl_teams, const char *selected_team);
 void sim_match(Match *m);
 void sim_series(Series *s);
 void sim_month(Sim *sim);

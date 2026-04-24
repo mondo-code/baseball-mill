@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include "player.h"
 #include "utils.h"
 
@@ -17,8 +18,8 @@ Hitter *gen_hitter(unsigned int age) {
 	hr.speed = random_int_range(1, 99);
 	h->ratings = hr;
 
-	HitterStats hs = {0};
-	h->stats = hs;
+	h->season_stats = (HitterStats){0};
+	h->career_stats = (HitterStats){0};
 
 	return h;
 }
@@ -36,9 +37,25 @@ Pitcher *gen_pitcher(unsigned int age) {
 	pr.stamina = random_int_range(1, 99);
 	p->ratings = pr;
 
-	PitcherStats ps = {0};
-	p->stats = ps;
+	p->season_stats = (PitcherStats){0};
+	p->career_stats = (PitcherStats){0};
 
+	return p;
+}
+
+Hitter *copy_hitter(const Hitter *src) {
+	Hitter *h = malloc(sizeof(Hitter));
+	*h = *src;
+	h->base.first_name = strdup(src->base.first_name);
+	h->base.last_name = strdup(src->base.last_name);
+	return h;
+}
+
+Pitcher *copy_pitcher(const Pitcher *src) {
+	Pitcher *p = malloc(sizeof(Pitcher));
+	*p = *src;
+	p->base.first_name = strdup(src->base.first_name);
+	p->base.last_name = strdup(src->base.last_name);
 	return p;
 }
 
@@ -97,6 +114,45 @@ void pitcher_age_curve(Pitcher *p) {
 	p->ratings.command	= (unsigned int)(p->ratings.command * command_mult);
 	p->ratings.stuff	= (unsigned int)(p->ratings.stuff * stuff_mult);
 	p->ratings.stamina	= (unsigned int)(p->ratings.stamina * stamina_mult);
+}
+
+// add stats from stats struct b to stats struct a
+void add_hitter_stats(HitterStats *a, HitterStats *b) {
+	a->GP += b->GP;
+	a->PA += b->PA;
+	a->AB += b->AB;
+	a->H += b->H;
+	a->H2 += b->H2;
+	a->H3 += b->H3;
+	a->HR += b->HR;
+	a->BB += b->BB;
+	a->SB += b->SB;
+	a->RBI += b->RBI;
+
+	// recalculate averages
+	if (a->AB > 0) {
+		a->AVG = (double)a->H / a->AB;
+		a->OBP = (double)(a->H + a->BB) / (a->AB + a->BB);
+		a->SLG = (double)((a->H - a->H2 - a->H3 - a->HR)
+				+ 2*a->H2 + 3*a->H3 + 4*a->HR) / a->AB;
+	} else {
+		a->AVG = 0.0;
+		a->OBP = 0.0;
+		a->SLG = 0.0;
+	}
+	a->OPS = a->OBP + a->SLG;
+}
+
+void add_pitcher_stats(PitcherStats *a, PitcherStats *b) {
+	a->BBA += b->BBA;
+	a->ER += b->ER;
+	a->GS++;
+	a->BF += b->BF;
+	a->HA += b->HA;
+	a->SO += b->SO;
+	add_innings(&a->IP, &b->IP);
+    double ip_total = (double)a->IP.whole + (a->IP.thirds / 3.0);
+    a->ERA = (ip_total > 0.0) ? (a->ER / ip_total) * 9.0 : 0.0;
 }
 
 unsigned int total_hitter_rating(Hitter *h) {

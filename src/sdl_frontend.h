@@ -29,5 +29,6 @@ void sdl_season_ui(SDLCtx *ctx, Sim *sim);
 void sdl_world_series_ui(SDLCtx *ctx, Sim *sim);
 void sdl_season_end_ui(SDLCtx *ctx, Sim *sim);
 void sdl_offseason_ui(SDLCtx *ctx, Sim *sim);
+void sdl_history_ui(SDLCtx *ctx, Sim *sim);
 
 #endif  // SDL_FRONTEND_H
