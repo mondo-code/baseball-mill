@@ -113,14 +113,13 @@ static int draw_text(SDLCtx *ctx, TTF_Font *font,
 }
 
 // TODO: this should take a Panel struct instead of just all the dimensions
-static void draw_panel(SDLCtx *ctx, int x, int y, int w, int h,
-                       const char *title) {
-    fill_rect(ctx->renderer, x, y, w, h, COL_PANEL);
-    draw_border(ctx->renderer, x, y, w, h, COL_BORDER);
+static void draw_panel(SDLCtx *ctx, const Panel *pn, const char *title) {
+    fill_rect(ctx->renderer, pn->x, pn->y, pn->w, pn->h, COL_PANEL);
+    draw_border(ctx->renderer, pn->x, pn->y, pn->w, pn->h, COL_BORDER);
     if (title && title[0]) {
         // small gap in border, title sits right after the top-left corner
-        int tx = x + ctx->font_width;
-        int ty = y - ctx->font_height / 2;
+        int tx = pn->x + ctx->font_width;
+        int ty = pn->y - ctx->font_height / 2;
         // blank a strip so the title sits cleanly on the border line
         fill_rect(ctx->renderer, tx - 2, ty,
                   (int)strlen(title) * ctx->font_width + 4, ctx->font_height, COL_PANEL);
@@ -229,8 +228,8 @@ size_t sdl_main_menu(SDLCtx *ctx, const char **options, size_t n_options) {
 		int panel_x = (win_width - panel_width) / 2;
 		int padding = 16;
 
-		draw_panel(ctx, panel_x - padding, start_y - padding,
-					panel_width + padding * 2, total_height + padding * 2, "Main Menu");
+		Panel main_menu_panel = { panel_x - padding, start_y - padding, panel_width + padding * 2, total_height + padding * 2 };
+		draw_panel(ctx, &main_menu_panel, "Main Menu");
 
 		for (int i = 0; i < n_options; i++) {
 			int row_y = start_y + i * row_height;
@@ -356,7 +355,7 @@ const char *sdl_team_select(SDLCtx *ctx, Team **al_teams, size_t n_al, Team **nl
 						al_panel.w + 2, al_panel.h + 2, COL_HIGHLIGHT);
 		}
 
-		draw_panel(ctx, al_panel.x, al_panel.y, al_panel.w, al_panel.h, " AL Teams: ");
+		draw_panel(ctx, &al_panel, " AL Teams: ");
 		for (int i = 0; i < n_al; i++) {
 			int ry = al_panel.y + content_y_off + i * row_height;
 			draw_menu_row(ctx, al_panel.x + 2, ry, al_panel.w - 4,
@@ -371,7 +370,7 @@ const char *sdl_team_select(SDLCtx *ctx, Team **al_teams, size_t n_al, Team **nl
 			draw_border(ctx->renderer, nl_panel.x - 1, nl_panel.y - 1,
 						nl_panel.w + 2, nl_panel.h + 2, COL_HIGHLIGHT);
 		}
-		draw_panel(ctx, nl_panel.x, nl_panel.y, nl_panel.w, nl_panel.h, " NL Teams: ");
+		draw_panel(ctx, &nl_panel, " NL Teams: ");
 		for (int i = 0; i < n_nl; i++) {
 			int ry = nl_panel.y + content_y_off + i * row_height;
 			draw_menu_row(ctx, nl_panel.x + 2, ry, nl_panel.w - 4,
@@ -388,7 +387,7 @@ const char *sdl_team_select(SDLCtx *ctx, Team **al_teams, size_t n_al, Team **nl
 }
 
 static void draw_standings(SDLCtx *ctx, Panel p, const char *title, Team **teams, int n_teams, Team *selected) {
-	draw_panel(ctx, p.x, p.y, p.w, p.h, title);
+	draw_panel(ctx, &p, title);
 	int row_h = ctx->font_height + 2;
 	int cy = p.y + ctx->font_height + 6;
 	for (int i = 0; i < n_teams && cy + row_h < p.y + p.h; i++) {
@@ -565,9 +564,9 @@ void sdl_season_ui(SDLCtx *ctx, Sim *sim) {
 
 		Team *sel_team = sim->selected_team;
 		bool show_career_stats = false;
-		draw_panel(ctx, hitters_panel.x, hitters_panel.y, hitters_panel.w, hitters_panel.h, " Hitter Stats ");
+		draw_panel(ctx, &hitters_panel, " Hitter Stats ");
 		draw_hitter_stats(ctx, &hitters_panel, sel_team->hitters, sel_team->n_hitters, show_career_stats);
-		draw_panel(ctx, pitchers_panel.x, pitchers_panel.y, pitchers_panel.w, pitchers_panel.h, " Pitcher Stats ");
+		draw_panel(ctx, &pitchers_panel, " Pitcher Stats ");
 		draw_pitcher_stats(ctx, &pitchers_panel, sel_team->pitchers, sel_team->n_pitchers, show_career_stats);
 		draw_standings(ctx, al_panel, "AL Standings", sim->al_teams, sim->al_team_count, sim->selected_team);
 		draw_standings(ctx, nl_panel, "NL Standings", sim->nl_teams, sim->nl_team_count, sim->selected_team);
@@ -629,12 +628,13 @@ void sdl_world_series_ui(SDLCtx *ctx, Sim *sim) {
 			if (tw > max_width) max_width = tw;
 		}
 
+		int padding = 24;
 		int panel_width = max_width + 64;
 		int panel_x = (win_width - panel_width) / 2;
-		int padding = 24;
+		int panel_y = start_y - padding;
 
-		draw_panel(ctx, panel_x - padding, start_y - padding,
-				panel_width + padding * 2, total_height + padding * 2, "World Series");
+		Panel ws_panel = { panel_x - padding, start_y - padding, panel_width + padding * 2, total_height + padding * 2 };
+		draw_panel(ctx, &ws_panel, "World Series");
 
 		char series_str[DEFAULT_BUFFER_LEN];
 		snprintf(series_str, sizeof(series_str), "%s vs. %s", al_champ->name, nl_champ->name);
@@ -925,7 +925,7 @@ void sdl_offseason_ui(SDLCtx *ctx, Sim *sim) {
 			if (focus == p)
 				draw_border(ctx->renderer, panels[p].x - 1, panels[p].y - 1,
 						panels[p].w + 2, panels[p].h + 2, COL_HIGHLIGHT);
-			draw_panel(ctx, panels[p].x, panels[p].y, panels[p].w, panels[p].h, titles[p]);
+			draw_panel(ctx, &panels[p], titles[p]);
 		}
 
 		draw_hitter_header(ctx, &panels[FOCUS_HITTER_ROSTER], char_w);
@@ -1016,7 +1016,6 @@ void sdl_offseason_ui(SDLCtx *ctx, Sim *sim) {
 	sdl_history_ui(ctx, sim);
 }
 
-// TODO: add number of championships won
 void sdl_history_ui(SDLCtx *ctx, Sim *sim) {
 	bool running = true;
 	while (running) {
@@ -1051,8 +1050,8 @@ void sdl_history_ui(SDLCtx *ctx, Sim *sim) {
 
 		Panel top_hitter_panel  = { left_x,  panel_y, panel_w, panel_h };
 		Panel top_pitcher_panel = { right_x, panel_y, panel_w, panel_h };
-		draw_panel(ctx, top_hitter_panel.x, top_hitter_panel.y, top_hitter_panel.w, top_hitter_panel.h, "Top Hitters All Time");
-		draw_panel(ctx, top_pitcher_panel.x, top_pitcher_panel.y, top_pitcher_panel.w, top_pitcher_panel.h, "Top Pitchers All Time");
+		draw_panel(ctx, &top_hitter_panel, "Top Hitters All Time");
+		draw_panel(ctx, &top_pitcher_panel, "Top Pitchers All Time");
 
 		int char_h, char_w;
 		TTF_SizeText(ctx->font, "A", &char_w, &char_h);
