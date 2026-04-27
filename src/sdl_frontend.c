@@ -403,13 +403,14 @@ static void draw_standings(SDLCtx *ctx, Panel p, const char *title, Team **teams
 
 // season UI and offseason UI have different column offsets because it looks a little awkward if they don't 
 const int SEASON_NAME_OFFSET	= 0;
-const int SEASON_STAT1_OFFSET	= 22;
-const int SEASON_STAT2_OFFSET	= 30;
-const int SEASON_STAT3_OFFSET	= 38;
-const int SEASON_STAT4_OFFSET	= 46;
-const int SEASON_STAT5_OFFSET	= 54;
-const int SEASON_STAT6_OFFSET	= 61;
-const int SEASON_STAT7_OFFSET	= 68;
+const int SEASON_STAT1_OFFSET	= 20;
+const int SEASON_STAT2_OFFSET	= 28;
+const int SEASON_STAT3_OFFSET	= 36;
+const int SEASON_STAT4_OFFSET	= 44;
+const int SEASON_STAT5_OFFSET	= 52;
+const int SEASON_STAT6_OFFSET	= 59;
+const int SEASON_STAT7_OFFSET	= 66;
+const int SEASON_STAT8_OFFSET	= 72;
 
 static void draw_hitter_stats_header(SDLCtx *ctx, Panel *p, int char_w) {
 	int header_x = p->x + 10;
@@ -419,9 +420,10 @@ static void draw_hitter_stats_header(SDLCtx *ctx, Panel *p, int char_w) {
 	draw_text(ctx, ctx->font, "OBP", header_x + SEASON_STAT2_OFFSET * char_w, header_y, COL_DIM);
 	draw_text(ctx, ctx->font, "SLG", header_x + SEASON_STAT3_OFFSET * char_w, header_y, COL_DIM);
 	draw_text(ctx, ctx->font, "OPS", header_x + SEASON_STAT4_OFFSET * char_w, header_y, COL_DIM);
-	draw_text(ctx, ctx->font, "HR", header_x + SEASON_STAT5_OFFSET * char_w, header_y, COL_DIM);
-	draw_text(ctx, ctx->font, "BB", header_x + SEASON_STAT6_OFFSET * char_w, header_y, COL_DIM);
-	draw_text(ctx, ctx->font, "RBI", header_x + SEASON_STAT7_OFFSET * char_w, header_y, COL_DIM);
+	draw_text(ctx, ctx->font, "H", header_x + SEASON_STAT5_OFFSET * char_w, header_y, COL_DIM);
+	draw_text(ctx, ctx->font, "HR", header_x + SEASON_STAT6_OFFSET * char_w, header_y, COL_DIM);
+	draw_text(ctx, ctx->font, "BB", header_x + SEASON_STAT7_OFFSET * char_w, header_y, COL_DIM);
+	draw_text(ctx, ctx->font, "RBI", header_x + SEASON_STAT8_OFFSET * char_w, header_y, COL_DIM);
 }
 
 static void draw_hitter_stats(SDLCtx *ctx, Panel *pn, Hitter **hitters, size_t n_hitters, bool show_career_stats) {
@@ -455,14 +457,17 @@ static void draw_hitter_stats(SDLCtx *ctx, Panel *pn, Hitter **hitters, size_t n
         snprintf(buf, sizeof(buf), ".%03d", (int)(stats.OPS * 1000));
         draw_text(ctx, ctx->font, buf, rx + SEASON_STAT4_OFFSET * char_w, cy, COL_TEXT);
 
-        snprintf(buf, sizeof(buf), "%d",   stats.HR);
+        snprintf(buf, sizeof(buf), "%d",   stats.H);
         draw_text(ctx, ctx->font, buf, (rx + SEASON_STAT5_OFFSET * char_w) + COUNTING_STAT_OFFSET, cy, COL_TEXT);
 
-        snprintf(buf, sizeof(buf), "%d",   stats.BB);
+        snprintf(buf, sizeof(buf), "%d",   stats.HR);
         draw_text(ctx, ctx->font, buf, (rx + SEASON_STAT6_OFFSET * char_w) + COUNTING_STAT_OFFSET, cy, COL_TEXT);
 
-        snprintf(buf, sizeof(buf), "%d",   stats.RBI);
+        snprintf(buf, sizeof(buf), "%d",   stats.BB);
         draw_text(ctx, ctx->font, buf, (rx + SEASON_STAT7_OFFSET * char_w) + COUNTING_STAT_OFFSET, cy, COL_TEXT);
+
+        snprintf(buf, sizeof(buf), "%d",   stats.RBI);
+        draw_text(ctx, ctx->font, buf, (rx + SEASON_STAT8_OFFSET * char_w) + COUNTING_STAT_OFFSET, cy, COL_TEXT);
 
         cy += row_h;
     }
@@ -556,9 +561,9 @@ void sdl_season_ui(SDLCtx *ctx, Sim *sim) {
 		set_color(ctx->renderer, COL_BG);
 		SDL_RenderClear(ctx->renderer);
 
-		Panel pitchers_panel = { left_x, top_y, cols_left, row_height }; 
+		Panel hitters_panel = { left_x, top_y, cols_left, row_height };
 		Panel al_panel = { right_x, top_y, cols_right, row_height };
-		Panel hitters_panel = { left_x, bot_y, cols_left, row_height };
+		Panel pitchers_panel = { left_x, bot_y, cols_left, row_height }; 
 		Panel nl_panel = { right_x, bot_y, cols_right, row_height };
 
 		Team *sel_team = sim->selected_team;
@@ -1041,14 +1046,14 @@ void sdl_history_ui(SDLCtx *ctx, Sim *sim) {
 		int row_h      = ctx->font_height + 4;
 		int header_h   = ctx->font_height + 6;
 		int content_h  = N_TOP_PLAYERS * row_h;
-		int panel_w    = (win_width - padding * 2 - gap) / 2;
+		int panel_w    = (win_width - (gap - padding) * 2) / 2;
 		int panel_h    = header_h + row_h + 2 + content_h + padding;
-		int panel_y    = (win_height - panel_h) / 2;
-		int left_x     = padding;
-		int right_x    = padding + panel_w + gap;
+		int top_y	   = ((win_height - panel_h) / 2) - (padding * 6);
+		int bot_y      = top_y + panel_h + gap;
+		int panel_x	   = panel_w - (padding * gap);
 
-		Panel top_hitter_panel  = { left_x,  panel_y, panel_w, panel_h };
-		Panel top_pitcher_panel = { right_x, panel_y, panel_w, panel_h };
+		Panel top_hitter_panel  = { panel_x, top_y, panel_w, panel_h };
+		Panel top_pitcher_panel = { panel_x, bot_y, panel_w, panel_h };
 		draw_panel(ctx, &top_hitter_panel, "Top Hitters All Time");
 		draw_panel(ctx, &top_pitcher_panel, "Top Pitchers All Time");
 
@@ -1062,8 +1067,8 @@ void sdl_history_ui(SDLCtx *ctx, Sim *sim) {
 
 		char series_won[32];
 		snprintf(series_won, sizeof(series_won), "%d World Series Won", sim->sel_ws_won);
-		draw_screen_title(ctx, sim->selected_team->name, win_width, panel_y - (padding * 2) - gap, COL_TITLE);
-		draw_screen_title(ctx, series_won, win_width, panel_y - padding - gap, COL_TITLE);
+		draw_screen_title(ctx, sim->selected_team->name, win_width, top_y - (padding * 2) - gap, COL_TITLE);
+		draw_screen_title(ctx, series_won, win_width, top_y - padding - gap, COL_TITLE);
 
 		SDL_RenderPresent(ctx->renderer);
 		SDL_Delay(DEFAULT_DELAY);

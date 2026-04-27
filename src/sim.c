@@ -59,14 +59,14 @@ void sim_hitter_stats(Hitter *h) {
 	double p_walk_base = clamp(0.02 + 0.0015 * h->ratings.eye);
 	// this keeps elite players from getting wildly unrealistic walk rates
 	double p_walk = clamp(p_walk_base * (1.0 - 0.3 * (h->ratings.eye / 99.0)));
-	double p_hit = clamp(avgBA + 0.003 * h->ratings.contact);
+	double p_hit = clamp(avgBA + 0.002 * h->ratings.contact);
 	double p_hr = clamp(0.02 + 0.001 * h->ratings.power);
 	double p_sb = clamp(0.02 + 0.002 * h->ratings.speed);
 	double p_rbi = clamp(0.02 + 0.005 * h->ratings.power);
 
 	// generate counting stats for this sim
 	game_stats.GP = 1;
-	game_stats.PA = random_int_range(4, 5);
+	game_stats.PA = 4;
 	game_stats.BB = binom_draw(game_stats.PA, p_walk);
 	game_stats.AB = game_stats.PA - game_stats.BB;
 	game_stats.H = binom_draw(game_stats.AB, p_hit);
