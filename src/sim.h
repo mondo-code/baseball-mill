@@ -75,7 +75,7 @@ void sim_month(Sim *sim);
 void advance_month(Sim *sim);
 void gen_opponents(Sim *s, size_t n_opponents);
 void gen_month_schedule(Sim *sim);
-void sim_offseason(Sim *sim);
+void reset_season_stats(Sim *sim);
 void age_curve_players(Sim *sim);
 const char *month_str(Month m);
 

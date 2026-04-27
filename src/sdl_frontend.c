@@ -649,7 +649,8 @@ void sdl_world_series_ui(SDLCtx *ctx, Sim *sim) {
 		SDL_Delay(DEFAULT_DELAY);
 	}
 
-	sdl_offseason_ui(ctx, sim);
+	reset_season_stats(sim);
+	sdl_history_ui(ctx, sim);
 }
 
 // offseason UI
@@ -1011,8 +1012,7 @@ void sdl_offseason_ui(SDLCtx *ctx, Sim *sim) {
         if (pitcher_prospects[i] && !pitcher_prospect_active[i]) free_pitcher(pitcher_prospects[i]);
 	}
 
-	sim_offseason(sim);
-	sdl_history_ui(ctx, sim);
+	sdl_season_ui(ctx, sim);
 }
 
 void sdl_history_ui(SDLCtx *ctx, Sim *sim) {
@@ -1068,5 +1068,5 @@ void sdl_history_ui(SDLCtx *ctx, Sim *sim) {
 		SDL_RenderPresent(ctx->renderer);
 		SDL_Delay(DEFAULT_DELAY);
 	}
-	sdl_season_ui(ctx, sim);
+	sdl_offseason_ui(ctx, sim);
 }

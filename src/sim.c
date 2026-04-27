@@ -382,7 +382,7 @@ static void update_top_pitchers(Sim *sim) {
 	}
 }
 
-void sim_offseason(Sim *sim) {
+void reset_season_stats(Sim *sim) {
 	// add to career stats for user team
 	// it's pointless to do this for other teams because it's never shown
 	Team *user = sim->selected_team;
