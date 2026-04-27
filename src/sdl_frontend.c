@@ -148,13 +148,13 @@ static void draw_menu_row(SDLCtx *ctx, int x, int y, int w, const char *text, bo
 	}
 }
 
-static bool panel_hit(Panel p, int panel_x, int panel_y) {
-	return panel_x >= p.x && panel_x < p.x + p.w &&
-		panel_y >= p.y && panel_y < p.y + p.h;
+static bool panel_hit(const Panel *p, int panel_x, int panel_y) {
+	return panel_x >= p->x && panel_x < p->x + p->w &&
+		panel_y >= p->y && panel_y < p->y + p->h;
 }
 
-static int panel_row_at(SDLCtx *ctx, Panel p, int panel_y, int n_rows) {
-    int content_y = p.y + ctx->font_height + 6; // below title
+static int panel_row_at(SDLCtx *ctx, const Panel *p, int panel_y, int n_rows) {
+    int content_y = p->y + ctx->font_height + 6; // below title
     int row = (panel_y - content_y) / (ctx->font_height + 2);
     if (row < 0 || row >= n_rows) return -1;
     return row;
@@ -301,11 +301,11 @@ const char *sdl_team_select(SDLCtx *ctx, Team **al_teams, size_t n_al, Team **nl
 					break;
 				case SDL_MOUSEMOTION: {
 					int mx = e.motion.x, my = e.motion.y;
-					if (panel_hit(al_panel, mx, my)) {
-						int row = panel_row_at(ctx, al_panel, my, (int)n_al);
+					if (panel_hit(&al_panel, mx, my)) {
+						int row = panel_row_at(ctx, &al_panel, my, (int)n_al);
 						if (row >= 0) { al_sel = row; al_focused = true; }
-					} else if (panel_hit(nl_panel, mx, my)) {
-						int row = panel_row_at(ctx, nl_panel, my, (int)n_nl);
+					} else if (panel_hit(&nl_panel, mx, my)) {
+						int row = panel_row_at(ctx, &nl_panel, my, (int)n_nl);
 						if (row >= 0) { nl_sel = row; al_focused = false; }
 					}
 					break;
@@ -314,8 +314,8 @@ const char *sdl_team_select(SDLCtx *ctx, Team **al_teams, size_t n_al, Team **nl
 				case SDL_MOUSEBUTTONDOWN: {
 					int mx = e.button.x, my = e.button.y;
 					if (e.button.button == SDL_BUTTON_LEFT) {
-						if (panel_hit(al_panel, mx, my)) {
-							int row = panel_row_at(ctx, al_panel, my, (int)n_al);
+						if (panel_hit(&al_panel, mx, my)) {
+							int row = panel_row_at(ctx, &al_panel, my, (int)n_al);
 							if (row >= 0) {
 								if (al_focused && (size_t)row == al_sel) {
 									result = strdup(al_teams[al_sel]->name);
@@ -324,8 +324,8 @@ const char *sdl_team_select(SDLCtx *ctx, Team **al_teams, size_t n_al, Team **nl
 									al_sel = row; al_focused = true;
 								}
 							}
-						} else if (panel_hit(nl_panel, mx, my)) {
-							int row = panel_row_at(ctx, nl_panel, my, (int)n_nl);
+						} else if (panel_hit(&nl_panel, mx, my)) {
+							int row = panel_row_at(ctx, &nl_panel, my, (int)n_nl);
 							if (row >= 0) {
 								if (al_focused && (size_t)row == nl_sel) {
 									result = strdup(nl_teams[nl_sel]->name);
@@ -385,18 +385,18 @@ const char *sdl_team_select(SDLCtx *ctx, Team **al_teams, size_t n_al, Team **nl
 	return result;
 }
 
-static void draw_standings(SDLCtx *ctx, Panel p, const char *title, Team **teams, int n_teams, Team *selected) {
-	draw_panel(ctx, &p, title);
+static void draw_standings(SDLCtx *ctx, const Panel *p, const char *title, Team **teams, int n_teams, Team *selected) {
+	draw_panel(ctx, p, title);
 	int row_h = ctx->font_height + 2;
-	int cy = p.y + ctx->font_height + 6;
-	for (int i = 0; i < n_teams && cy + row_h < p.y + p.h; i++) {
+	int cy = p->y + ctx->font_height + 6;
+	for (int i = 0; i < n_teams && cy + row_h < p->y + p->h; i++) {
 		Team *t = teams[i];
 		char buf[DEFAULT_BUFFER_LEN];
 		snprintf(buf, sizeof(buf), "%s  %d - %d", t->name, t->wins, t->losses);
 		SDL_Color col = (t == selected) ? COL_SELECTED : COL_TEXT;
 		if (t == selected)
-			fill_rect(ctx->renderer, p.x + 2, cy, p.w - 4, row_h, COL_BG);
-		draw_text(ctx, ctx->font, buf, p.x + 6, cy + 1, col);
+			fill_rect(ctx->renderer, p->x + 2, cy, p->w - 4, row_h, COL_BG);
+		draw_text(ctx, ctx->font, buf, p->x + 6, cy + 1, col);
 		cy += row_h;
 	}
 }
@@ -412,7 +412,7 @@ const int SEASON_STAT6_OFFSET	= 59;
 const int SEASON_STAT7_OFFSET	= 66;
 const int SEASON_STAT8_OFFSET	= 72;
 
-static void draw_hitter_stats_header(SDLCtx *ctx, Panel *p, int char_w) {
+static void draw_hitter_stats_header(SDLCtx *ctx, const Panel *p, int char_w) {
 	int header_x = p->x + 10;
 	int header_y = p->y + 10;
 	draw_text(ctx, ctx->font, "Name", header_x + SEASON_NAME_OFFSET * char_w, header_y, COL_DIM);
@@ -426,7 +426,7 @@ static void draw_hitter_stats_header(SDLCtx *ctx, Panel *p, int char_w) {
 	draw_text(ctx, ctx->font, "RBI", header_x + SEASON_STAT8_OFFSET * char_w, header_y, COL_DIM);
 }
 
-static void draw_hitter_stats(SDLCtx *ctx, Panel *pn, Hitter **hitters, size_t n_hitters, bool show_career_stats) {
+static void draw_hitter_stats(SDLCtx *ctx, const Panel *pn, Hitter **hitters, size_t n_hitters, bool show_career_stats) {
 	int char_h, char_w;
 	TTF_SizeText(ctx->font, "A", &char_w, &char_h);
 
@@ -473,9 +473,9 @@ static void draw_hitter_stats(SDLCtx *ctx, Panel *pn, Hitter **hitters, size_t n
     }
 }
 
-static void draw_pitcher_stats_header(SDLCtx *ctx, Panel *p, int char_w) {
-	int header_x = p->x + 10;
-	int header_y = p->y + 10;
+static void draw_pitcher_stats_header(SDLCtx *ctx, const Panel *pn, int char_w) {
+	int header_x = pn->x + 10;
+	int header_y = pn->y + 10;
 	draw_text(ctx, ctx->font, "Name", header_x + SEASON_NAME_OFFSET * char_w, header_y, COL_DIM);
 	draw_text(ctx, ctx->font, "IP", header_x + SEASON_STAT1_OFFSET * char_w, header_y, COL_DIM);
 	draw_text(ctx, ctx->font, "ERA", header_x + SEASON_STAT2_OFFSET * char_w, header_y, COL_DIM);
@@ -483,7 +483,7 @@ static void draw_pitcher_stats_header(SDLCtx *ctx, Panel *p, int char_w) {
 	draw_text(ctx, ctx->font, "BB", header_x + SEASON_STAT4_OFFSET * char_w, header_y, COL_DIM);
 }
 
-static void draw_pitcher_stats(SDLCtx *ctx, Panel *pn, Pitcher **pitchers, size_t n_pitchers, bool show_career_stats) {
+static void draw_pitcher_stats(SDLCtx *ctx, const Panel *pn, Pitcher **pitchers, size_t n_pitchers, bool show_career_stats) {
 	int char_h, char_w;
 	TTF_SizeText(ctx->font, "A", &char_w, &char_h);
 
@@ -572,8 +572,8 @@ void sdl_season_ui(SDLCtx *ctx, Sim *sim) {
 		draw_hitter_stats(ctx, &hitters_panel, sel_team->hitters, sel_team->n_hitters, show_career_stats);
 		draw_panel(ctx, &pitchers_panel, " Pitcher Stats ");
 		draw_pitcher_stats(ctx, &pitchers_panel, sel_team->pitchers, sel_team->n_pitchers, show_career_stats);
-		draw_standings(ctx, al_panel, "AL Standings", sim->al_teams, sim->al_team_count, sim->selected_team);
-		draw_standings(ctx, nl_panel, "NL Standings", sim->nl_teams, sim->nl_team_count, sim->selected_team);
+		draw_standings(ctx, &al_panel, "AL Standings", sim->al_teams, sim->al_team_count, sim->selected_team);
+		draw_standings(ctx, &nl_panel, "NL Standings", sim->nl_teams, sim->nl_team_count, sim->selected_team);
 
 		char season_header[32];
 		snprintf(season_header, sizeof(season_header), "%s %d", month_str(sim->month), sim->current_year);
@@ -677,9 +677,9 @@ const int OFFSEASON_STAT5_OFFSET	= 47;
 const int OFFSEASON_STAT6_OFFSET	= 52;
 const int OFFSEASON_STAT7_OFFSET	= 57;
 
-static void draw_hitter_header(SDLCtx *ctx, Panel *p, int char_w) {
-	int header_x = p->x + 10;
-	int header_y = p->y + 10;
+static void draw_hitter_header(SDLCtx *ctx, const Panel *pn, int char_w) {
+	int header_x = pn->x + 10;
+	int header_y = pn->y + 10;
 	draw_text(ctx, ctx->font, "Name",  header_x + OFFSEASON_NAME_OFFSET  * char_w, header_y, COL_DIM);
 	draw_text(ctx, ctx->font, "AGE",   header_x + OFFSEASON_AGE_OFFSET   * char_w, header_y, COL_DIM);
 	draw_text(ctx, ctx->font, "CON",   header_x + OFFSEASON_STAT1_OFFSET * char_w, header_y, COL_DIM);
@@ -688,9 +688,9 @@ static void draw_hitter_header(SDLCtx *ctx, Panel *p, int char_w) {
 	draw_text(ctx, ctx->font, "SPD",   header_x + OFFSEASON_STAT4_OFFSET * char_w, header_y, COL_DIM);
 }
 
-static void draw_pitcher_header(SDLCtx *ctx, Panel *p, int char_w) {
-	int header_x = p->x + 10;
-	int header_y = p->y + 10;
+static void draw_pitcher_header(SDLCtx *ctx, const Panel *pn, int char_w) {
+	int header_x = pn->x + 10;
+	int header_y = pn->y + 10;
 	draw_text(ctx, ctx->font, "Name",  header_x + OFFSEASON_NAME_OFFSET  * char_w, header_y, COL_DIM);
 	draw_text(ctx, ctx->font, "AGE",   header_x + OFFSEASON_AGE_OFFSET   * char_w, header_y, COL_DIM);
 	draw_text(ctx, ctx->font, "CMD",   header_x + OFFSEASON_STAT1_OFFSET * char_w, header_y, COL_DIM);
@@ -698,7 +698,7 @@ static void draw_pitcher_header(SDLCtx *ctx, Panel *p, int char_w) {
 	draw_text(ctx, ctx->font, "STM",   header_x + OFFSEASON_STAT3_OFFSET * char_w, header_y, COL_DIM);
 }
 
-static void draw_hitter_overview(SDLCtx *ctx, Panel *pn, Hitter *h, int char_w, int row, 
+static void draw_hitter_overview(SDLCtx *ctx, const Panel *pn, Hitter *h, int char_w, int row, 
 								int row_x, int row_y, SDL_Color col) {
 	char buf[DEFAULT_BUFFER_LEN];
 	snprintf(buf, sizeof(buf), "%s %s", h->base.first_name, h->base.last_name);
@@ -715,7 +715,7 @@ static void draw_hitter_overview(SDLCtx *ctx, Panel *pn, Hitter *h, int char_w, 
 	draw_text(ctx, ctx->font, buf, row_x + OFFSEASON_STAT4_OFFSET * char_w, row_y + 1, col);
 }
 
-static void draw_pitcher_overview(SDLCtx *ctx, Panel *pn, Pitcher *p, int char_w, int row, 
+static void draw_pitcher_overview(SDLCtx *ctx, const Panel *pn, Pitcher *p, int char_w, int row, 
 								int row_x, int row_y, SDL_Color col) {
 	char buf[DEFAULT_BUFFER_LEN];
 	snprintf(buf, sizeof(buf), "%s %s", p->base.first_name, p->base.last_name);
@@ -883,7 +883,7 @@ void sdl_offseason_ui(SDLCtx *ctx, Sim *sim) {
 				case SDL_MOUSEMOTION: {
 					int mx = e.motion.x, my = e.motion.y;
 					for (int p = 0; p < FOCUS_COUNT; p++) {
-						if (panel_hit(panels[p], mx, my)) {
+						if (panel_hit(&panels[p], mx, my)) {
 							int row = (my - panels[p].y - content_off) / row_height;
 							if (row >= 0 && (size_t)row < panel_counts[p]) {
 								focus  = p;
@@ -898,7 +898,7 @@ void sdl_offseason_ui(SDLCtx *ctx, Sim *sim) {
 					if (e.button.button != SDL_BUTTON_LEFT) break;
 					int mx = e.button.x, my = e.button.y;
 					for (int p = 0; p < FOCUS_COUNT; p++) {
-						if (!panel_hit(panels[p], mx, my)) continue;
+						if (!panel_hit(&panels[p], mx, my)) continue;
 						int row = (my - panels[p].y - content_off) / row_height;
 						if (row < 0 || (size_t)row >= panel_counts[p]) break;
 						if ((int)focus == p && (int)sel[p] == row) {
