@@ -32,6 +32,5 @@ void destroy_team(Team *team);
 unsigned int get_hitters_rating(Team *team);
 unsigned int get_pitchers_rating(Team *team);
 void automatic_roster_changes(Team *team);
-void quicksort_teams(Team **teams, int low, int high);
 
 #endif  // TEAM_H

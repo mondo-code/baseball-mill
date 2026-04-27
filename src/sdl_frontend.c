@@ -112,7 +112,6 @@ static int draw_text(SDLCtx *ctx, TTF_Font *font,
 	return w;
 }
 
-// TODO: this should take a Panel struct instead of just all the dimensions
 static void draw_panel(SDLCtx *ctx, const Panel *pn, const char *title) {
     fill_rect(ctx->renderer, pn->x, pn->y, pn->w, pn->h, COL_PANEL);
     draw_border(ctx->renderer, pn->x, pn->y, pn->w, pn->h, COL_BORDER);
@@ -633,7 +632,7 @@ void sdl_world_series_ui(SDLCtx *ctx, Sim *sim) {
 		int panel_x = (win_width - panel_width) / 2;
 		int panel_y = start_y - padding;
 
-		Panel ws_panel = { panel_x - padding, start_y - padding, panel_width + padding * 2, total_height + padding * 2 };
+		Panel ws_panel = { panel_x - padding, panel_y, panel_width + padding * 2, total_height + padding * 2 };
 		draw_panel(ctx, &ws_panel, "World Series");
 
 		char series_str[DEFAULT_BUFFER_LEN];

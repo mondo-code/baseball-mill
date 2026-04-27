@@ -5,6 +5,7 @@
 #define N_PITCHER_RATINGS 3
 
 typedef struct {
+	unsigned int id;
     const char *first_name;
     const char *last_name;
 	unsigned int age;

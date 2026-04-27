@@ -187,6 +187,13 @@ void sim_series(Series *s) {
 	s->n_matches = i;
 }
 
+static int comp_teams(const void *a, const void *b) {
+	const Team *t1 = *(const Team **)a;
+	const Team *t2 = *(const Team **)b;
+	// descending order
+	return (t2->wins > t1->wins) - (t2->wins < t1->wins);
+}
+
 void sim_month(Sim *sim) {
 	if (sim->month == OCTOBER) return;
 	gen_month_schedule(sim);
@@ -194,8 +201,8 @@ void sim_month(Sim *sim) {
 		Match *m = &sim->matches[g];
 		sim_match(m);
 	}
-	quicksort_teams(sim->al_teams, 0, N_AL_TEAMS-1);
-	quicksort_teams(sim->nl_teams, 0, N_NL_TEAMS-1);
+	qsort(sim->al_teams, N_AL_TEAMS, sizeof(Team*), comp_teams);
+	qsort(sim->nl_teams, N_NL_TEAMS, sizeof(Team*), comp_teams);
 	advance_month(sim);
 }
 
@@ -293,8 +300,22 @@ static void reset_teams_stats(Team **teams, size_t n_teams) {
 	}
 }
 
+// comparison functions for qsort
+static int comp_top_hitters(const void *a, const void *b) {
+	const Hitter *h1 = *(const Hitter **)a;
+	const Hitter *h2 = *(const Hitter **)b;
+	return (h2->career_stats.H > h1->career_stats.H) - (h2->career_stats.H < h1->career_stats.H);
+}
+
+static int comp_top_pitchers(const void *a, const void *b) {
+	const Pitcher *h1 = *(const Pitcher **)a;
+	const Pitcher *h2 = *(const Pitcher **)b;
+	return (h2->career_stats.SO > h1->career_stats.SO) - (h2->career_stats.SO < h1->career_stats.SO);
+}
+
 // helpers for inserting players into the top players list by insertion sort approach
 static void update_top_hitters(Sim *sim) {
+	qsort(sim->top_hitters, sim->n_top_hitters, sizeof(Hitter*), comp_top_hitters);
 	Team *sel = sim->selected_team;
 	for (int i = 0; i < sel->n_hitters; i++) {
 		Hitter *h = sel->hitters[i];
@@ -307,7 +328,7 @@ static void update_top_hitters(Sim *sim) {
 
 		// check if player is already in the top list and remove them first
 		for (int k = 0; k < sim->n_top_hitters; k++) {
-			if (sim->top_hitters[k] == h) {
+			if (sim->top_hitters[k]->base.id == h->base.id) {
 				// shift everyone above k down
 				for (int m = k; m < sim->n_top_hitters - 1; m++)
 					sim->top_hitters[m] = sim->top_hitters[m+1];
@@ -328,6 +349,7 @@ static void update_top_hitters(Sim *sim) {
 }
 
 static void update_top_pitchers(Sim *sim) {
+	qsort(sim->top_pitchers, sim->n_top_pitchers, sizeof(Pitcher*), comp_top_pitchers);
 	Team *sel = sim->selected_team;
 	for (int i = 0; i < sel->n_pitchers; i++) {
 		Pitcher *p = sel->pitchers[i];
@@ -340,7 +362,7 @@ static void update_top_pitchers(Sim *sim) {
 
 		// check if player is already in the top list and remove them first
 		for (int k = 0; k < sim->n_top_pitchers; k++) {
-			if (sim->top_pitchers[k] == p) {
+			if (sim->top_pitchers[k]->base.id == p->base.id) {
 				// shift everyone above k down
 				for (int m = k; m < sim->n_top_pitchers - 1; m++)
 					sim->top_pitchers[m] = sim->top_pitchers[m+1];

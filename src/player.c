@@ -4,9 +4,12 @@
 #include "player.h"
 #include "utils.h"
 
+static unsigned int running_id = 1;
+
 Hitter *gen_hitter(unsigned int age) {
 	Hitter *h = malloc(sizeof(Hitter));
 	h->base = (Player){0};
+	h->base.id = running_id++;
 	h->base.first_name = file_random_line("firstnames.txt");
 	h->base.last_name = file_random_line("lastnames.txt");
 	h->base.age = age;
@@ -27,6 +30,7 @@ Hitter *gen_hitter(unsigned int age) {
 Pitcher *gen_pitcher(unsigned int age) {
 	Pitcher *p = malloc(sizeof(Pitcher));
 	p->base = (Player){0};
+	p->base.id = running_id++;
 	p->base.first_name = file_random_line("firstnames.txt");
 	p->base.last_name = file_random_line("lastnames.txt");
 	p->base.age = age;

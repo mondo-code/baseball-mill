@@ -138,33 +138,3 @@ void automatic_roster_changes(Team *team) {
 		}
 	}
 }
-
-// functions for descending order quicksort
-void swap_teams(Team **teams, int i, int j) {
-	Team *temp = teams[i];
-	teams[i] = teams[j];
-	teams[j] = temp;
-}
-
-int partition_teams(Team **teams, int low, int high) {
-	Team *pivot = teams[high];
-	int i = low - 1;
-
-	for (int j = low; j < high; j++) {
-		if (teams[j]->wins > pivot->wins) {
-			i += 1;
-			swap_teams(teams, i, j);
-		}
-	}
-
-	swap_teams(teams, i+1, high);
-	return i + 1;
-}
-
-void quicksort_teams(Team **teams, int low, int high) {
-	if (low < high) {
-		int p = partition_teams(teams, low, high);
-		quicksort_teams(teams, low, p-1);
-		quicksort_teams(teams, p+1, high);
-	}
-}

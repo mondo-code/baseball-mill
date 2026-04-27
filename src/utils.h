@@ -1,9 +1,11 @@
-#ifndef UTIL_HPP
-#define UTIL_HPP
+#ifndef UTIL_H
+#define UTIL_H
 
 #include <stdio.h>
 #define LARGE_BUF_SIZE 65536
 #define DISCARD_BUF_SIZE 256
+
+#define SWAP(type, x, y) do { type temp = x; x = y; y = temp; } while (0)
 
 int random_int_range(int min, int max);
 int random_int_limit(int limit);
