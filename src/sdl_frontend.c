@@ -255,7 +255,7 @@ const char *sdl_team_select(SDLCtx *ctx, Team **al_teams, size_t n_al, Team **nl
 		SDL_GetWindowSize(ctx->window, &win_width, &win_height);
 
 		int panel_width = win_width / 3;
-		int panel_height = (int)(win_height * 0.45);
+		int panel_height = (int)(win_height * 0.15);
 		int panel_y = (win_height - panel_height) / 2;
 		int gap = win_width / 16;
 		int total_width = panel_width * 2 + gap;
@@ -523,15 +523,17 @@ void sdl_season_ui(SDLCtx *ctx, Sim *sim) {
 	while (running) {
 		int win_width, win_height;
 		SDL_GetWindowSize(ctx->window, &win_width, &win_height);
-		int pad = 48;
 		int gap = 12;
-		int cols_right = 220;
-		int cols_left = win_width - cols_right - pad * 2 - gap;
-		int row_height = (win_height - pad * 2 - gap) / 2;
-		int left_x = pad;
-		int right_x = pad + cols_left + gap;
-		int top_y = pad;
-		int bot_y = pad + row_height + gap;
+		int width_right = 220;
+		int width_left = 630;
+		int total_width = width_left + width_right + gap;
+		int row_height = 240;
+		int total_h = row_height * 2 + gap;
+
+		int left_x = (win_width - total_width) / 2;
+		int right_x = left_x + width_left + gap;
+		int top_y = (win_height - total_h) / 2;
+		int bot_y = top_y + row_height + gap;
 
 		SDL_Event e;
 		while (SDL_PollEvent(&e)) {
@@ -561,10 +563,10 @@ void sdl_season_ui(SDLCtx *ctx, Sim *sim) {
 		set_color(ctx->renderer, COL_BG);
 		SDL_RenderClear(ctx->renderer);
 
-		Panel hitters_panel = { left_x, top_y, cols_left, row_height };
-		Panel al_panel = { right_x, top_y, cols_right, row_height };
-		Panel pitchers_panel = { left_x, bot_y, cols_left, row_height }; 
-		Panel nl_panel = { right_x, bot_y, cols_right, row_height };
+		Panel hitters_panel = { left_x, top_y, width_left, row_height };
+		Panel al_panel = { right_x, top_y, width_right, row_height };
+		Panel pitchers_panel = { left_x, bot_y, width_left, row_height }; 
+		Panel nl_panel = { right_x, bot_y, width_right, row_height };
 
 		Team *sel_team = sim->selected_team;
 		bool show_career_stats = false;
@@ -1047,10 +1049,10 @@ void sdl_history_ui(SDLCtx *ctx, Sim *sim) {
 		int header_h   = ctx->font_height + 6;
 		int content_h  = N_TOP_PLAYERS * row_h;
 		int panel_w    = (win_width - (gap - padding) * 2) / 2;
-		int panel_h    = header_h + row_h + 2 + content_h + padding;
+		int panel_h    = header_h + row_h + content_h + padding;
 		int top_y	   = ((win_height - panel_h) / 2) - (padding * 6);
 		int bot_y      = top_y + panel_h + gap;
-		int panel_x	   = panel_w - (padding * gap);
+		int panel_x	   = (panel_w - 1.2 * (padding * gap));
 
 		Panel top_hitter_panel  = { panel_x, top_y, panel_w, panel_h };
 		Panel top_pitcher_panel = { panel_x, bot_y, panel_w, panel_h };
