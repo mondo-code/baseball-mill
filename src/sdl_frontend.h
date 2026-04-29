@@ -7,6 +7,17 @@
 #include "team.h"
 #include "sim.h"
 
+#define COL_BG				((SDL_Color){  15,  15,  20, 255 })
+#define COL_PANEL			((SDL_Color){  25,  28,  36, 255 })
+#define COL_BORDER			((SDL_Color){  70,  80, 100, 255 })
+#define COL_TITLE			((SDL_Color){ 255, 200,  60, 255 })
+#define COL_TEXT			((SDL_Color){ 210, 215, 225, 255 })
+#define COL_DIM				((SDL_Color){ 110, 120, 140, 255 })
+#define COL_HIGHLIGHT		((SDL_Color){  50, 120, 220, 255 })
+#define COL_HIGHLIGHT_TXT	((SDL_Color){ 255, 255, 255, 255 })
+#define COL_SELECTED		((SDL_Color){  60, 200, 100, 255 })
+#define COL_URGENT			((SDL_Color){ 220, 80,	80,	 255 })
+
 // SDL boilerplate stuff
 typedef struct {
 	SDL_Window		*window;

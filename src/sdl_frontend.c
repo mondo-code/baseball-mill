@@ -3,17 +3,6 @@
 #include "sim.h"
 #include "utils.h"
 
-#define COL_BG				((SDL_Color){  15,  15,  20, 255 })  // near-black
-#define COL_PANEL			((SDL_Color){  25,  28,  36, 255 })  // panel fill
-#define COL_BORDER			((SDL_Color){  70,  80, 100, 255 })  // box lines
-#define COL_TITLE			((SDL_Color){ 255, 200,  60, 255 })  // gold heading
-#define COL_TEXT			((SDL_Color){ 210, 215, 225, 255 })  // normal text
-#define COL_DIM				((SDL_Color){ 110, 120, 140, 255 })  // dimmed text
-#define COL_HIGHLIGHT		((SDL_Color){  50, 120, 220, 255 })  // selection bg
-#define COL_HIGHLIGHT_TXT	((SDL_Color){ 255, 255, 255, 255 })
-#define COL_SELECTED		((SDL_Color){  60, 200, 100, 255 })  // "your team" indicator
-#define COL_URGENT			((SDL_Color){ 220, 80,	80,	 255 })
-
 const size_t DEFAULT_BUFFER_LEN = 128;
 const unsigned int DEFAULT_DELAY = 16;
 

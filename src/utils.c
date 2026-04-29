@@ -64,8 +64,6 @@ int goto_line(FILE* f, unsigned int line_number) {
 	return 0;
 }
 
-int max(int num1, int num2) { return num1 >= num2 ? num1 : num2; }
-
 char *file_random_line(const char *path) {
 	FILE *f = fopen(path, "r");
 	char *r_str;
