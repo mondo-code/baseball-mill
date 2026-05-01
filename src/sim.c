@@ -116,6 +116,34 @@ void sim_pitcher_stats(Pitcher *p) {
 	add_pitcher_stats(ps, &game_stats);
 }
 
+static void draw_match_sim(Match *m, double p1, double p2) {
+	unsigned int runs1 = binom_draw(9, p1);
+	unsigned int runs2 = binom_draw(9, p2);
+
+	m->t1_runs = runs1;
+	m->t2_runs = runs2;
+
+	for (size_t h = 0; h < m->t1->n_hitters; h++)
+		sim_hitter_stats(m->t1->hitters[h]);
+	sim_pitcher_stats(m->t1->pitchers[m->t1->next_pitcher]);
+	m->t1->next_pitcher = (m->t1->next_pitcher >= m->t1->n_pitchers-1) ? 0 : (m->t1->next_pitcher + 1);
+
+	for (size_t h = 0; h < m->t2->n_hitters; h++)
+		sim_hitter_stats(m->t2->hitters[h]);
+	sim_pitcher_stats(m->t2->pitchers[m->t2->next_pitcher]);
+	m->t2->next_pitcher = (m->t2->next_pitcher >= m->t2->n_pitchers-1) ? 0 : (m->t2->next_pitcher + 1);
+
+	if (runs1 > runs2) {
+		m->t1->wins++;
+		m->t2->losses++;
+	} else if (runs1 < runs2) {
+		m->t1->losses++;
+		m->t2->wins++;
+	} else {
+		draw_match_sim(m, p1, p2);
+	}
+}
+
 void sim_match(Match *m) {
 	const double average_runs = 4;
 	const double hitting_impact = 1.2;
@@ -142,32 +170,7 @@ void sim_match(Match *m) {
 	if (p1 > 1.0) p1 = 1.0;
 	if (p2 > 1.0) p2 = 1.0;
 
-draw_sim:
-	unsigned int runs1 = binom_draw(9, p1);
-	unsigned int runs2 = binom_draw(9, p2);
-
-	m->t1_runs = runs1;
-	m->t2_runs = runs2;
-
-	for (size_t h = 0; h < m->t1->n_hitters; h++)
-		sim_hitter_stats(m->t1->hitters[h]);
-	sim_pitcher_stats(m->t1->pitchers[m->t1->next_pitcher]);
-	m->t1->next_pitcher = (m->t1->next_pitcher >= m->t1->n_pitchers-1) ? 0 : (m->t1->next_pitcher + 1);
-
-	for (size_t h = 0; h < m->t2->n_hitters; h++)
-		sim_hitter_stats(m->t2->hitters[h]);
-	sim_pitcher_stats(m->t2->pitchers[m->t2->next_pitcher]);
-	m->t2->next_pitcher = (m->t2->next_pitcher >= m->t2->n_pitchers-1) ? 0 : (m->t2->next_pitcher + 1);
-
-	if (runs1 > runs2) {
-		m->t1->wins++;
-		m->t2->losses++;
-	} else if (runs1 < runs2) {
-		m->t1->losses++;
-		m->t2->wins++;
-	} else {
-		goto draw_sim;
-	}
+	draw_match_sim(m, p1, p2);
 }
 
 void sim_series(Series *s) {

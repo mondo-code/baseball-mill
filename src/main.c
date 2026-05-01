@@ -5,6 +5,21 @@
 #include "sim.h"
 #include "team.h"
 
+int run(SDLCtx *ctx) {
+	Team **al_teams = init_al_teams();
+	Team **nl_teams = init_nl_teams();
+	const char *sel = sdl_team_select(ctx, al_teams, N_AL_TEAMS, 
+			nl_teams, N_NL_TEAMS);
+	if (!sel) {
+		destroy_sdl_ctx(ctx);
+		return 1;
+	}
+	Sim *sim = init_sim(al_teams, nl_teams, sel);
+	ctx->theme.title = team_color_lookup(sim->selected_team->short_name);
+	sdl_season_ui(ctx, sim);
+	return 0;
+}
+
 int main(void) {
 	SDLCtx ctx;
 	if (!init_sdl_ctx(&ctx, "assets/JetBrainsMono-Regular.ttf", "assets/JetBrainsMono-Bold.ttf", 1400, 800)) {
@@ -18,17 +33,7 @@ int main(void) {
 	switch(choice) {
 		case 0:
 			// New Save
-			Team **al_teams = init_al_teams();
-			Team **nl_teams = init_nl_teams();
-			const char *sel = sdl_team_select(&ctx, al_teams, N_AL_TEAMS, 
-													nl_teams, N_NL_TEAMS);
-			if (!sel) {
-				destroy_sdl_ctx(&ctx);
-				return 1;
-			}
-			Sim *sim = init_sim(al_teams, nl_teams, sel);
-			ctx.theme.title = team_color_lookup(sim->selected_team->short_name);
-			sdl_season_ui(&ctx, sim);
+			run(&ctx);
 			break;
 		case 1:
 			// Exit
