@@ -6,6 +6,22 @@
 const size_t DEFAULT_BUFFER_LEN = 128;
 const unsigned int DEFAULT_DELAY = 16;
 
+Theme init_default_theme() {
+	Theme default_theme = { 
+		.bg				= COL_BG,
+		.panel			= COL_PANEL,
+		.border			= COL_BORDER,
+		.title			= COL_TITLE,
+		.text			= COL_TEXT,
+		.dim			= COL_DIM,
+		.highlight		= COL_HIGHLIGHT,
+		.highlight_txt	= COL_HIGHLIGHT_TXT,
+		.selected		= COL_SELECTED,
+		.urgent			= COL_URGENT
+	};
+	return default_theme;
+}
+
 bool init_sdl_ctx(
 		SDLCtx *ctx,
 		const char *font_path,
@@ -55,6 +71,7 @@ bool init_sdl_ctx(
 	ctx->font_bold = font_bold_path ? TTF_OpenFont(font_bold_path, 14) : ctx->font;
 	if (!ctx->font_bold) ctx->font_bold = ctx->font;
 	TTF_SizeText(ctx->font, "M", &ctx->font_width, &ctx->font_height);
+	ctx->theme = init_default_theme();
 
 	return true;
 }
@@ -102,16 +119,16 @@ static int draw_text(SDLCtx *ctx, TTF_Font *font,
 }
 
 static void draw_panel(SDLCtx *ctx, const Panel *pn, const char *title) {
-    fill_rect(ctx->renderer, pn->x, pn->y, pn->w, pn->h, COL_PANEL);
-    draw_border(ctx->renderer, pn->x, pn->y, pn->w, pn->h, COL_BORDER);
+    fill_rect(ctx->renderer, pn->x, pn->y, pn->w, pn->h, ctx->theme.panel);
+    draw_border(ctx->renderer, pn->x, pn->y, pn->w, pn->h, ctx->theme.border);
     if (title && title[0]) {
         // small gap in border, title sits right after the top-left corner
         int tx = pn->x + ctx->font_width;
         int ty = pn->y - ctx->font_height / 2;
         // blank a strip so the title sits cleanly on the border line
         fill_rect(ctx->renderer, tx - 2, ty,
-                  (int)strlen(title) * ctx->font_width + 4, ctx->font_height, COL_PANEL);
-        draw_text(ctx, ctx->font_bold, title, tx, ty, COL_TITLE);
+                  (int)strlen(title) * ctx->font_width + 4, ctx->font_height, ctx->theme.panel);
+        draw_text(ctx, ctx->font_bold, title, tx, ty, ctx->theme.title);
     }
 }
 
@@ -129,10 +146,10 @@ static void draw_screen_footer(SDLCtx *ctx, const char *text, int win_width, int
 
 static void draw_menu_row(SDLCtx *ctx, int x, int y, int w, const char *text, bool highlighted, bool is_selected) {
 	if (highlighted) {
-		fill_rect(ctx->renderer, x, y, w, ctx->font_height + 2, COL_HIGHLIGHT);
-		draw_text(ctx, ctx->font, text, x + 4, y + 1, COL_HIGHLIGHT_TXT);
+		fill_rect(ctx->renderer, x, y, w, ctx->font_height + 2, ctx->theme.highlight);
+		draw_text(ctx, ctx->font, text, x + 4, y + 1, ctx->theme.highlight_txt);
 	} else {
-		SDL_Color text_color = is_selected ? COL_SELECTED : COL_TEXT;
+		SDL_Color text_color = is_selected ? ctx->theme.selected : ctx->theme.text;
 		draw_text(ctx, ctx->font, text, x + 4, y + 1, text_color);
 	}
 }
@@ -200,7 +217,7 @@ size_t sdl_main_menu(SDLCtx *ctx, const char **options, size_t n_options) {
 				}
 			}
 		}
-		set_color(ctx->renderer, COL_BG);
+		set_color(ctx->renderer, ctx->theme.bg);
 		SDL_RenderClear(ctx->renderer);
 		int row_height = ctx->font_height + 4;
 		int total_height = (int)n_options * row_height;
@@ -329,18 +346,18 @@ const char *sdl_team_select(SDLCtx *ctx, Team **al_teams, size_t n_al, Team **nl
 				}
 			}
 		}
-		set_color(ctx->renderer, COL_BG);
+		set_color(ctx->renderer, ctx->theme.bg);
 		SDL_RenderClear(ctx->renderer);
 
-		draw_screen_title(ctx, "SELECT YOUR TEAM", win_width, panel_y - 12, COL_TITLE); 
+		draw_screen_title(ctx, "SELECT YOUR TEAM", win_width, panel_y - 12, ctx->theme.title); 
 		const char *hint = "arrows/vim keys to move  |  tab to switch league  |  enter or click to confirm";
-		draw_screen_footer(ctx, hint, win_width, panel_y + panel_height + 32, COL_DIM);
+		draw_screen_footer(ctx, hint, win_width, panel_y + panel_height + 32, ctx->theme.dim);
 
 		// AL panel
 		// border is drawn before panel so the border doesn't go over title
 		if (al_focused) {
 			draw_border(ctx->renderer, al_panel.x - 1, al_panel.y - 1,
-						al_panel.w + 2, al_panel.h + 2, COL_HIGHLIGHT);
+						al_panel.w + 2, al_panel.h + 2, ctx->theme.highlight);
 		}
 
 		draw_panel(ctx, &al_panel, " AL Teams: ");
@@ -356,7 +373,7 @@ const char *sdl_team_select(SDLCtx *ctx, Team **al_teams, size_t n_al, Team **nl
 		bool nl_focused = !al_focused;
 		if (nl_focused) {
 			draw_border(ctx->renderer, nl_panel.x - 1, nl_panel.y - 1,
-						nl_panel.w + 2, nl_panel.h + 2, COL_HIGHLIGHT);
+						nl_panel.w + 2, nl_panel.h + 2, ctx->theme.highlight);
 		}
 		draw_panel(ctx, &nl_panel, " NL Teams: ");
 		for (int i = 0; i < n_nl; i++) {
@@ -382,9 +399,9 @@ static void draw_standings(SDLCtx *ctx, const Panel *p, const char *title, Team 
 		Team *t = teams[i];
 		char buf[DEFAULT_BUFFER_LEN];
 		snprintf(buf, sizeof(buf), "%s  %d - %d", t->name, t->wins, t->losses);
-		SDL_Color col = (t == selected) ? COL_SELECTED : COL_TEXT;
+		SDL_Color col = (t == selected) ? ctx->theme.title : ctx->theme.text;
 		if (t == selected)
-			fill_rect(ctx->renderer, p->x + 2, cy, p->w - 4, row_h, COL_BG);
+			fill_rect(ctx->renderer, p->x + 2, cy, p->w - 4, row_h, ctx->theme.bg);
 		draw_text(ctx, ctx->font, buf, p->x + 6, cy + 1, col);
 		cy += row_h;
 	}
@@ -404,15 +421,15 @@ const int SEASON_STAT8_OFFSET	= 72;
 static void draw_hitter_stats_header(SDLCtx *ctx, const Panel *p, int char_w) {
 	int header_x = p->x + 10;
 	int header_y = p->y + 10;
-	draw_text(ctx, ctx->font, "Name", header_x + SEASON_NAME_OFFSET * char_w, header_y, COL_DIM);
-	draw_text(ctx, ctx->font, "AVG", header_x + SEASON_STAT1_OFFSET * char_w, header_y, COL_DIM);
-	draw_text(ctx, ctx->font, "OBP", header_x + SEASON_STAT2_OFFSET * char_w, header_y, COL_DIM);
-	draw_text(ctx, ctx->font, "SLG", header_x + SEASON_STAT3_OFFSET * char_w, header_y, COL_DIM);
-	draw_text(ctx, ctx->font, "OPS", header_x + SEASON_STAT4_OFFSET * char_w, header_y, COL_DIM);
-	draw_text(ctx, ctx->font, "H", header_x + SEASON_STAT5_OFFSET * char_w, header_y, COL_DIM);
-	draw_text(ctx, ctx->font, "HR", header_x + SEASON_STAT6_OFFSET * char_w, header_y, COL_DIM);
-	draw_text(ctx, ctx->font, "BB", header_x + SEASON_STAT7_OFFSET * char_w, header_y, COL_DIM);
-	draw_text(ctx, ctx->font, "RBI", header_x + SEASON_STAT8_OFFSET * char_w, header_y, COL_DIM);
+	draw_text(ctx, ctx->font, "Name", header_x + SEASON_NAME_OFFSET * char_w, header_y, ctx->theme.dim);
+	draw_text(ctx, ctx->font, "AVG", header_x + SEASON_STAT1_OFFSET * char_w, header_y, ctx->theme.dim);
+	draw_text(ctx, ctx->font, "OBP", header_x + SEASON_STAT2_OFFSET * char_w, header_y, ctx->theme.dim);
+	draw_text(ctx, ctx->font, "SLG", header_x + SEASON_STAT3_OFFSET * char_w, header_y, ctx->theme.dim);
+	draw_text(ctx, ctx->font, "OPS", header_x + SEASON_STAT4_OFFSET * char_w, header_y, ctx->theme.dim);
+	draw_text(ctx, ctx->font, "H", header_x + SEASON_STAT5_OFFSET * char_w, header_y, ctx->theme.dim);
+	draw_text(ctx, ctx->font, "HR", header_x + SEASON_STAT6_OFFSET * char_w, header_y, ctx->theme.dim);
+	draw_text(ctx, ctx->font, "BB", header_x + SEASON_STAT7_OFFSET * char_w, header_y, ctx->theme.dim);
+	draw_text(ctx, ctx->font, "RBI", header_x + SEASON_STAT8_OFFSET * char_w, header_y, ctx->theme.dim);
 }
 
 static void draw_hitter_stats(SDLCtx *ctx, const Panel *pn, Hitter **hitters, size_t n_hitters, bool show_career_stats) {
@@ -432,31 +449,31 @@ static void draw_hitter_stats(SDLCtx *ctx, const Panel *pn, Hitter **hitters, si
 		HitterStats stats = show_career_stats ? h->career_stats : h->season_stats;
 		int rx = pn->x + 6; 
 		snprintf(buf, sizeof(buf), "%s %s", h->base.first_name, h->base.last_name);
-		draw_text(ctx, ctx->font, buf, rx + SEASON_NAME_OFFSET * char_w, cy, COL_TEXT);
+		draw_text(ctx, ctx->font, buf, rx + SEASON_NAME_OFFSET * char_w, cy, ctx->theme.text);
 
-		snprintf(buf, sizeof buf, ".%03d", (int)(stats.AVG * 1000));
-		draw_text(ctx, ctx->font, buf, rx + SEASON_STAT1_OFFSET * char_w, cy, COL_TEXT);
+		snprintf(buf, sizeof(buf), ".%03d", (int)(stats.AVG * 1000));
+		draw_text(ctx, ctx->font, buf, rx + SEASON_STAT1_OFFSET * char_w, cy, ctx->theme.text);
 
 		snprintf(buf, sizeof(buf), ".%03d", (int)(stats.OBP * 1000));
-        draw_text(ctx, ctx->font, buf, rx + SEASON_STAT2_OFFSET * char_w, cy, COL_TEXT);
+        draw_text(ctx, ctx->font, buf, rx + SEASON_STAT2_OFFSET * char_w, cy, ctx->theme.text);
 
         snprintf(buf, sizeof(buf), ".%03d", (int)(stats.SLG * 1000));
-        draw_text(ctx, ctx->font, buf, rx + SEASON_STAT3_OFFSET * char_w, cy, COL_TEXT);
+        draw_text(ctx, ctx->font, buf, rx + SEASON_STAT3_OFFSET * char_w, cy, ctx->theme.text);
 
         snprintf(buf, sizeof(buf), ".%03d", (int)(stats.OPS * 1000));
-        draw_text(ctx, ctx->font, buf, rx + SEASON_STAT4_OFFSET * char_w, cy, COL_TEXT);
+        draw_text(ctx, ctx->font, buf, rx + SEASON_STAT4_OFFSET * char_w, cy, ctx->theme.text);
 
         snprintf(buf, sizeof(buf), "%d",   stats.H);
-        draw_text(ctx, ctx->font, buf, (rx + SEASON_STAT5_OFFSET * char_w) + COUNTING_STAT_OFFSET, cy, COL_TEXT);
+        draw_text(ctx, ctx->font, buf, (rx + SEASON_STAT5_OFFSET * char_w) + COUNTING_STAT_OFFSET, cy, ctx->theme.text);
 
         snprintf(buf, sizeof(buf), "%d",   stats.HR);
-        draw_text(ctx, ctx->font, buf, (rx + SEASON_STAT6_OFFSET * char_w) + COUNTING_STAT_OFFSET, cy, COL_TEXT);
+        draw_text(ctx, ctx->font, buf, (rx + SEASON_STAT6_OFFSET * char_w) + COUNTING_STAT_OFFSET, cy, ctx->theme.text);
 
         snprintf(buf, sizeof(buf), "%d",   stats.BB);
-        draw_text(ctx, ctx->font, buf, (rx + SEASON_STAT7_OFFSET * char_w) + COUNTING_STAT_OFFSET, cy, COL_TEXT);
+        draw_text(ctx, ctx->font, buf, (rx + SEASON_STAT7_OFFSET * char_w) + COUNTING_STAT_OFFSET, cy, ctx->theme.text);
 
         snprintf(buf, sizeof(buf), "%d",   stats.RBI);
-        draw_text(ctx, ctx->font, buf, (rx + SEASON_STAT8_OFFSET * char_w) + COUNTING_STAT_OFFSET, cy, COL_TEXT);
+        draw_text(ctx, ctx->font, buf, (rx + SEASON_STAT8_OFFSET * char_w) + COUNTING_STAT_OFFSET, cy, ctx->theme.text);
 
         cy += row_h;
     }
@@ -465,11 +482,13 @@ static void draw_hitter_stats(SDLCtx *ctx, const Panel *pn, Hitter **hitters, si
 static void draw_pitcher_stats_header(SDLCtx *ctx, const Panel *pn, int char_w) {
 	int header_x = pn->x + 10;
 	int header_y = pn->y + 10;
-	draw_text(ctx, ctx->font, "Name", header_x + SEASON_NAME_OFFSET * char_w, header_y, COL_DIM);
-	draw_text(ctx, ctx->font, "IP", header_x + SEASON_STAT1_OFFSET * char_w, header_y, COL_DIM);
-	draw_text(ctx, ctx->font, "ERA", header_x + SEASON_STAT2_OFFSET * char_w, header_y, COL_DIM);
-	draw_text(ctx, ctx->font, "K", header_x + SEASON_STAT3_OFFSET * char_w, header_y, COL_DIM);
-	draw_text(ctx, ctx->font, "BB", header_x + SEASON_STAT4_OFFSET * char_w, header_y, COL_DIM);
+	draw_text(ctx, ctx->font, "Name", header_x + SEASON_NAME_OFFSET * char_w, header_y, ctx->theme.dim);
+	draw_text(ctx, ctx->font, "IP", header_x + SEASON_STAT1_OFFSET * char_w, header_y, ctx->theme.dim);
+	draw_text(ctx, ctx->font, "ERA", header_x + SEASON_STAT2_OFFSET * char_w, header_y, ctx->theme.dim);
+	draw_text(ctx, ctx->font, "ER", header_x + SEASON_STAT3_OFFSET * char_w, header_y, ctx->theme.dim);
+	draw_text(ctx, ctx->font, "AVGA", header_x + SEASON_STAT4_OFFSET * char_w, header_y, ctx->theme.dim);
+	draw_text(ctx, ctx->font, "K", header_x + SEASON_STAT5_OFFSET * char_w, header_y, ctx->theme.dim);
+	draw_text(ctx, ctx->font, "BB", header_x + SEASON_STAT6_OFFSET * char_w, header_y, ctx->theme.dim);
 }
 
 static void draw_pitcher_stats(SDLCtx *ctx, const Panel *pn, Pitcher **pitchers, size_t n_pitchers, bool show_career_stats) {
@@ -488,19 +507,25 @@ static void draw_pitcher_stats(SDLCtx *ctx, const Panel *pn, Pitcher **pitchers,
 		PitcherStats stats = (show_career_stats) ? p->career_stats : p->season_stats;
 		int rx = pn->x + 6; 
 		snprintf(buf, sizeof(buf), "%s %s", p->base.first_name, p->base.last_name);
-		draw_text(ctx, ctx->font, buf, rx + SEASON_NAME_OFFSET * char_w, cy, COL_TEXT);
+		draw_text(ctx, ctx->font, buf, rx + SEASON_NAME_OFFSET * char_w, cy, ctx->theme.text);
 
 		snprintf(buf, sizeof(buf), "%d.%d", stats.IP.whole, stats.IP.thirds);
-		draw_text(ctx, ctx->font, buf, rx + SEASON_STAT1_OFFSET * char_w, cy, COL_TEXT);
+		draw_text(ctx, ctx->font, buf, rx + SEASON_STAT1_OFFSET * char_w, cy, ctx->theme.text);
 
 		snprintf(buf, sizeof(buf), "%.2f", stats.ERA);
-		draw_text(ctx, ctx->font, buf, rx + SEASON_STAT2_OFFSET * char_w, cy, COL_TEXT);
+		draw_text(ctx, ctx->font, buf, rx + SEASON_STAT2_OFFSET * char_w, cy, ctx->theme.text);
+
+		snprintf(buf, sizeof(buf), "%d", stats.ER);
+		draw_text(ctx, ctx->font, buf, rx + SEASON_STAT3_OFFSET * char_w, cy, ctx->theme.text);
+
+		snprintf(buf, sizeof(buf), ".%03d", (int)(stats.AVGA * 1000));
+		draw_text(ctx, ctx->font, buf, rx + SEASON_STAT4_OFFSET * char_w, cy, ctx->theme.text);
 
 		snprintf(buf, sizeof(buf), "%d", stats.SO);
-		draw_text(ctx, ctx->font, buf, rx + SEASON_STAT3_OFFSET * char_w, cy, COL_TEXT);
+		draw_text(ctx, ctx->font, buf, rx + SEASON_STAT5_OFFSET * char_w, cy, ctx->theme.text);
 
 		snprintf(buf, sizeof(buf), "%d", stats.BBA);
-		draw_text(ctx, ctx->font, buf, rx + SEASON_STAT4_OFFSET * char_w, cy, COL_TEXT);
+		draw_text(ctx, ctx->font, buf, rx + SEASON_STAT6_OFFSET * char_w, cy, ctx->theme.text);
 
         cy += row_h;
     }
@@ -549,7 +574,7 @@ void sdl_season_ui(SDLCtx *ctx, Sim *sim) {
 				default: break;
 			}
 		}
-		set_color(ctx->renderer, COL_BG);
+		set_color(ctx->renderer, ctx->theme.bg);
 		SDL_RenderClear(ctx->renderer);
 
 		Panel hitters_panel = { left_x, top_y, width_left, row_height };
@@ -568,8 +593,8 @@ void sdl_season_ui(SDLCtx *ctx, Sim *sim) {
 
 		char season_header[32];
 		snprintf(season_header, sizeof(season_header), "%s %d", month_str(sim->month), sim->current_year);
-		draw_screen_title(ctx, season_header, win_width, top_y - gap, COL_TITLE);
-		draw_screen_footer(ctx, "press enter to advance month", win_width, win_height - 12, COL_DIM);
+		draw_screen_title(ctx, season_header, win_width, top_y - gap, ctx->theme.title);
+		draw_screen_footer(ctx, "press enter to advance month", win_width, win_height - 12, ctx->theme.dim);
 		SDL_RenderPresent(ctx->renderer);
 		SDL_Delay(DEFAULT_DELAY);
 	}
@@ -580,6 +605,9 @@ void sdl_world_series_ui(SDLCtx *ctx, Sim *sim) {
 	Team *al_champ = sim->al_teams[0];
 	Team *nl_champ = sim->nl_teams[0];
 
+	SDL_Color al_color = team_color_lookup(al_champ->short_name);
+	SDL_Color nl_color = team_color_lookup(nl_champ->short_name);
+
 	// set up and sim best of 7 series
 	Series ws = {0};
 	for (int i = 0; i < MAX_SERIES_MATCHES; i++)
@@ -587,7 +615,16 @@ void sdl_world_series_ui(SDLCtx *ctx, Sim *sim) {
 	sim_series(&ws);
 
 	// format strings that are printed during the SDL render
-	Team *winner = (ws.t1_wins > ws.t2_wins) ? al_champ : nl_champ;
+	Team *winner;
+	SDL_Color winner_str_color;
+	if (ws.t1_wins > ws.t2_wins) {
+		winner = al_champ;
+		winner_str_color = al_color;
+	} else {
+		winner = nl_champ;
+		winner_str_color = nl_color;
+	}
+
 	char winner_str[DEFAULT_BUFFER_LEN];
 	snprintf(winner_str, sizeof(winner_str), "%s win the World Series!", winner->name);
 	char match_str[ws.n_matches][DEFAULT_BUFFER_LEN];
@@ -610,7 +647,7 @@ void sdl_world_series_ui(SDLCtx *ctx, Sim *sim) {
 			}
 		}
 
-		set_color(ctx->renderer, COL_BG);
+		set_color(ctx->renderer, ctx->theme.bg);
 		SDL_RenderClear(ctx->renderer);
 		int row_height = ctx->font_height + 4;
 		int total_height = (((int)ws.n_matches + 1) * row_height) + 10;
@@ -633,13 +670,13 @@ void sdl_world_series_ui(SDLCtx *ctx, Sim *sim) {
 
 		char series_str[DEFAULT_BUFFER_LEN];
 		snprintf(series_str, sizeof(series_str), "%s vs. %s", al_champ->name, nl_champ->name);
-		draw_text(ctx, ctx->font, series_str, panel_x, start_y, COL_HIGHLIGHT_TXT);
+		draw_text(ctx, ctx->font, series_str, panel_x, start_y, ctx->theme.highlight_txt);
 		int row;
 		for (row = 0; row < ws.n_matches; row++) {
 			int row_y = start_y + row_height + row * row_height;
-			draw_text(ctx, ctx->font, match_str[row], panel_x, row_y, COL_TEXT);
+			draw_text(ctx, ctx->font, match_str[row], panel_x, row_y, ctx->theme.text);
 		}
-		draw_text(ctx, ctx->font, winner_str, panel_x, start_y + row_height + row * row_height, COL_HIGHLIGHT_TXT);
+		draw_text(ctx, ctx->font, winner_str, panel_x, start_y + row_height + row * row_height, winner_str_color);
 
 		SDL_RenderPresent(ctx->renderer);
 		SDL_Delay(DEFAULT_DELAY);
@@ -659,34 +696,34 @@ typedef enum {
 } OffseasonFocus;
 
 const int OFFSEASON_NAME_OFFSET		= 0;
-const int OFFSEASON_AGE_OFFSET		= 22;
-const int OFFSEASON_STAT1_OFFSET	= 27;
-const int OFFSEASON_STAT2_OFFSET	= 32;
-const int OFFSEASON_STAT3_OFFSET	= 37;
-const int OFFSEASON_STAT4_OFFSET	= 42;
-const int OFFSEASON_STAT5_OFFSET	= 47;
-const int OFFSEASON_STAT6_OFFSET	= 52;
-const int OFFSEASON_STAT7_OFFSET	= 57;
+const int OFFSEASON_AGE_OFFSET		= 26;
+const int OFFSEASON_STAT1_OFFSET	= 31;
+const int OFFSEASON_STAT2_OFFSET	= 36;
+const int OFFSEASON_STAT3_OFFSET	= 41;
+const int OFFSEASON_STAT4_OFFSET	= 46;
+const int OFFSEASON_STAT5_OFFSET	= 51;
+const int OFFSEASON_STAT6_OFFSET	= 55;
+const int OFFSEASON_STAT7_OFFSET	= 61;
 
 static void draw_hitter_header(SDLCtx *ctx, const Panel *pn, int char_w) {
 	int header_x = pn->x + 10;
 	int header_y = pn->y + 10;
-	draw_text(ctx, ctx->font, "Name",  header_x + OFFSEASON_NAME_OFFSET  * char_w, header_y, COL_DIM);
-	draw_text(ctx, ctx->font, "AGE",   header_x + OFFSEASON_AGE_OFFSET   * char_w, header_y, COL_DIM);
-	draw_text(ctx, ctx->font, "CON",   header_x + OFFSEASON_STAT1_OFFSET * char_w, header_y, COL_DIM);
-	draw_text(ctx, ctx->font, "EYE",   header_x + OFFSEASON_STAT2_OFFSET * char_w, header_y, COL_DIM);
-	draw_text(ctx, ctx->font, "PWR",   header_x + OFFSEASON_STAT3_OFFSET * char_w, header_y, COL_DIM);
-	draw_text(ctx, ctx->font, "SPD",   header_x + OFFSEASON_STAT4_OFFSET * char_w, header_y, COL_DIM);
+	draw_text(ctx, ctx->font, "Name",  header_x + OFFSEASON_NAME_OFFSET  * char_w, header_y, ctx->theme.dim);
+	draw_text(ctx, ctx->font, "AGE",   header_x + OFFSEASON_AGE_OFFSET   * char_w, header_y, ctx->theme.dim);
+	draw_text(ctx, ctx->font, "CON",   header_x + OFFSEASON_STAT1_OFFSET * char_w, header_y, ctx->theme.dim);
+	draw_text(ctx, ctx->font, "EYE",   header_x + OFFSEASON_STAT2_OFFSET * char_w, header_y, ctx->theme.dim);
+	draw_text(ctx, ctx->font, "PWR",   header_x + OFFSEASON_STAT3_OFFSET * char_w, header_y, ctx->theme.dim);
+	draw_text(ctx, ctx->font, "SPD",   header_x + OFFSEASON_STAT4_OFFSET * char_w, header_y, ctx->theme.dim);
 }
 
 static void draw_pitcher_header(SDLCtx *ctx, const Panel *pn, int char_w) {
 	int header_x = pn->x + 10;
 	int header_y = pn->y + 10;
-	draw_text(ctx, ctx->font, "Name",  header_x + OFFSEASON_NAME_OFFSET  * char_w, header_y, COL_DIM);
-	draw_text(ctx, ctx->font, "AGE",   header_x + OFFSEASON_AGE_OFFSET   * char_w, header_y, COL_DIM);
-	draw_text(ctx, ctx->font, "CMD",   header_x + OFFSEASON_STAT1_OFFSET * char_w, header_y, COL_DIM);
-	draw_text(ctx, ctx->font, "STF",   header_x + OFFSEASON_STAT2_OFFSET * char_w, header_y, COL_DIM);
-	draw_text(ctx, ctx->font, "STM",   header_x + OFFSEASON_STAT3_OFFSET * char_w, header_y, COL_DIM);
+	draw_text(ctx, ctx->font, "Name",  header_x + OFFSEASON_NAME_OFFSET  * char_w, header_y, ctx->theme.dim);
+	draw_text(ctx, ctx->font, "AGE",   header_x + OFFSEASON_AGE_OFFSET   * char_w, header_y, ctx->theme.dim);
+	draw_text(ctx, ctx->font, "CMD",   header_x + OFFSEASON_STAT1_OFFSET * char_w, header_y, ctx->theme.dim);
+	draw_text(ctx, ctx->font, "STF",   header_x + OFFSEASON_STAT2_OFFSET * char_w, header_y, ctx->theme.dim);
+	draw_text(ctx, ctx->font, "STM",   header_x + OFFSEASON_STAT3_OFFSET * char_w, header_y, ctx->theme.dim);
 }
 
 static void draw_hitter_overview(SDLCtx *ctx, const Panel *pn, Hitter *h, int char_w, int row, 
@@ -906,10 +943,10 @@ void sdl_offseason_ui(SDLCtx *ctx, Sim *sim) {
 			}
 		}
 
-		set_color(ctx->renderer, COL_BG);
+		set_color(ctx->renderer, ctx->theme.bg);
 		SDL_RenderClear(ctx->renderer);
 
-		draw_screen_title(ctx, "ROSTER CHANGES", win_width, top_y - gap, COL_TITLE);
+		draw_screen_title(ctx, "ROSTER CHANGES", win_width, top_y - gap, ctx->theme.title);
 
 		const char *titles[FOCUS_COUNT] = {
 			" Team Hitters ",
@@ -920,7 +957,7 @@ void sdl_offseason_ui(SDLCtx *ctx, Sim *sim) {
 		for (int p = 0; p < FOCUS_COUNT; p++) {
 			if (focus == p)
 				draw_border(ctx->renderer, panels[p].x - 1, panels[p].y - 1,
-						panels[p].w + 2, panels[p].h + 2, COL_HIGHLIGHT);
+						panels[p].w + 2, panels[p].h + 2, ctx->theme.highlight);
 			draw_panel(ctx, &panels[p], titles[p]);
 		}
 
@@ -938,8 +975,8 @@ void sdl_offseason_ui(SDLCtx *ctx, Sim *sim) {
 			bool active = hitter_roster_active[i];
 			int ry = pn->y + content_off + i * row_height;
 			if (highlighted)
-				fill_rect(ctx->renderer, pn->x + 2, ry, pn->w - 4, row_height, COL_HIGHLIGHT);
-			SDL_Color col = (highlighted ? COL_HIGHLIGHT_TXT : active ? COL_SELECTED : COL_TEXT);
+				fill_rect(ctx->renderer, pn->x + 2, ry, pn->w - 4, row_height, ctx->theme.highlight);
+			SDL_Color col = (highlighted ? ctx->theme.highlight_txt : active ? ctx->theme.selected : ctx->theme.text);
 			draw_hitter_overview(ctx, pn, h, char_w, i, rx, ry, col);
 		}
 
@@ -949,10 +986,10 @@ void sdl_offseason_ui(SDLCtx *ctx, Sim *sim) {
 			Hitter *h = hitter_prospects[i];
             bool highlighted = (focus == FOCUS_HITTER_PROSPECTS && sel[FOCUS_HITTER_PROSPECTS] == i);
 			bool active = hitter_prospect_active[i];
-			SDL_Color col = (highlighted ? COL_HIGHLIGHT_TXT : active ? COL_SELECTED : COL_TEXT);
+			SDL_Color col = (highlighted ? ctx->theme.highlight_txt : active ? ctx->theme.selected : ctx->theme.text);
 			int ry = pn->y + content_off + i * row_height;
 			if (highlighted)
-				fill_rect(ctx->renderer, pn->x + 2, ry, pn->w - 4, row_height, COL_HIGHLIGHT);
+				fill_rect(ctx->renderer, pn->x + 2, ry, pn->w - 4, row_height, ctx->theme.highlight);
 			draw_hitter_overview(ctx, pn, h, char_w, i, rx, ry, col);
 		}
 
@@ -963,10 +1000,10 @@ void sdl_offseason_ui(SDLCtx *ctx, Sim *sim) {
 			Pitcher *p = sel_team->pitchers[i];
             bool highlighted = (focus == FOCUS_PITCHER_ROSTER && sel[FOCUS_PITCHER_ROSTER] == i);
 			bool active = pitcher_roster_active[i];
-			SDL_Color col = (highlighted ? COL_HIGHLIGHT_TXT : active ? COL_SELECTED : COL_TEXT);
+			SDL_Color col = (highlighted ? ctx->theme.highlight_txt : active ? ctx->theme.selected : ctx->theme.text);
 			int ry = pn->y + content_off + i * row_height;
 			if (highlighted)
-				fill_rect(ctx->renderer, pn->x + 2, ry, pn->w - 4, row_height, COL_HIGHLIGHT);
+				fill_rect(ctx->renderer, pn->x + 2, ry, pn->w - 4, row_height, ctx->theme.highlight);
 			draw_pitcher_overview(ctx, pn, p, char_w, i, rx, ry, col);
 		}
 
@@ -976,10 +1013,10 @@ void sdl_offseason_ui(SDLCtx *ctx, Sim *sim) {
 			Pitcher *p = pitcher_prospects[i];
             bool highlighted = (focus == FOCUS_PITCHER_PROSPECTS && sel[FOCUS_PITCHER_PROSPECTS] == i);
 			bool active = pitcher_prospect_active[i];
-			SDL_Color col = (highlighted ? COL_HIGHLIGHT_TXT : active ? COL_SELECTED : COL_TEXT);
+			SDL_Color col = (highlighted ? ctx->theme.highlight_txt : active ? ctx->theme.selected : ctx->theme.text);
 			int ry = pn->y + content_off + i * row_height;
 			if (highlighted)
-				fill_rect(ctx->renderer, pn->x + 2, ry, pn->w - 4, row_height, COL_HIGHLIGHT);
+				fill_rect(ctx->renderer, pn->x + 2, ry, pn->w - 4, row_height, ctx->theme.highlight);
 			draw_pitcher_overview(ctx, pn, p, char_w, i, rx, ry, col);
 		}
 
@@ -989,12 +1026,12 @@ void sdl_offseason_ui(SDLCtx *ctx, Sim *sim) {
 			TTF_SizeText(ctx->font, validation_msg, &vw, &vh);
 			draw_text(ctx, ctx->font, validation_msg,
 					(win_width - vw) / 2, win_height - vh * 2 - 10,
-					COL_URGENT);
+					ctx->theme.urgent);
 		}
 
 		// footer
         const char *hint = "tab  cycle to next panel    arrows or j/k  navigate    space  toggle    enter  confirm";
-		draw_screen_footer(ctx, hint, win_width, win_height - 6, COL_DIM);
+		draw_screen_footer(ctx, hint, win_width, win_height - 6, ctx->theme.dim);
 
         SDL_RenderPresent(ctx->renderer);
         SDL_Delay(DEFAULT_DELAY);
@@ -1030,7 +1067,7 @@ void sdl_history_ui(SDLCtx *ctx, Sim *sim) {
 			}
 		}
 
-		set_color(ctx->renderer, COL_BG);
+		set_color(ctx->renderer, ctx->theme.bg);
 		SDL_RenderClear(ctx->renderer);
 		int padding    = 24;
 		int gap        = 12;
@@ -1058,8 +1095,8 @@ void sdl_history_ui(SDLCtx *ctx, Sim *sim) {
 
 		char series_won[32];
 		snprintf(series_won, sizeof(series_won), "%d World Series Won", sim->sel_ws_won);
-		draw_screen_title(ctx, sim->selected_team->name, win_width, top_y - (padding * 2) - gap, COL_TITLE);
-		draw_screen_title(ctx, series_won, win_width, top_y - padding - gap, COL_TITLE);
+		draw_screen_title(ctx, sim->selected_team->name, win_width, top_y - (padding * 2) - gap, ctx->theme.title);
+		draw_screen_title(ctx, series_won, win_width, top_y - padding - gap, ctx->theme.title);
 
 		SDL_RenderPresent(ctx->renderer);
 		SDL_Delay(DEFAULT_DELAY);

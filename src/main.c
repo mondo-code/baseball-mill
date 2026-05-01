@@ -27,6 +27,7 @@ int main(void) {
 				return 1;
 			}
 			Sim *sim = init_sim(al_teams, nl_teams, sel);
+			ctx.theme.title = team_color_lookup(sim->selected_team->short_name);
 			sdl_season_ui(&ctx, sim);
 			break;
 		case 1:
