@@ -6,12 +6,23 @@
 #include <features.h>
 #include <time.h>
 
-#ifdef __GLIBC__ 
+// arc4random is on the BSDs, mac, and glibc >= 2.36
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
+	#define ARC4RANDOM_VALID 1
+#elif defined(__GLIBC__) && (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 36))
+	#define ARC4RANDOM_VALID 1
+#else
+	#define ARC4RANDOM_VALID 0
+#endif
+
 // interval between min and max is inclusive
 int random_int_range(int min, int max) {
+#if ARC4RANDOM_VALID
     return min + (int)arc4random_uniform((uint32_t)(max - min + 1));
+#else
+	return min + rand() % (max - min + 1);
+#endif
 }
-#endif // __GLIBC__
 
 // thank you, stack overflow
 int random_int_limit(int limit) {
