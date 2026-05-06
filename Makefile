@@ -1,4 +1,4 @@
-CC = gcc
+CC = cc
 CFLAGS = -Ivendor -Wall -g 
 LDFLAGS = -Lvendor/lib -lm -lSDL2 -lSDL2_ttf
 
