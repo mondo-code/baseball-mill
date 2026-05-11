@@ -714,6 +714,7 @@ static void draw_hitter_header(SDLCtx *ctx, const Panel *pn, int char_w) {
 	draw_text(ctx, ctx->font, "EYE",   header_x + OFFSEASON_STAT2_OFFSET * char_w, header_y, ctx->theme.dim);
 	draw_text(ctx, ctx->font, "PWR",   header_x + OFFSEASON_STAT3_OFFSET * char_w, header_y, ctx->theme.dim);
 	draw_text(ctx, ctx->font, "SPD",   header_x + OFFSEASON_STAT4_OFFSET * char_w, header_y, ctx->theme.dim);
+	draw_text(ctx, ctx->font, "OVR",   header_x + OFFSEASON_STAT5_OFFSET * char_w, header_y, ctx->theme.dim);
 }
 
 static void draw_pitcher_header(SDLCtx *ctx, const Panel *pn, int char_w) {
@@ -724,6 +725,7 @@ static void draw_pitcher_header(SDLCtx *ctx, const Panel *pn, int char_w) {
 	draw_text(ctx, ctx->font, "CMD",   header_x + OFFSEASON_STAT1_OFFSET * char_w, header_y, ctx->theme.dim);
 	draw_text(ctx, ctx->font, "STF",   header_x + OFFSEASON_STAT2_OFFSET * char_w, header_y, ctx->theme.dim);
 	draw_text(ctx, ctx->font, "STM",   header_x + OFFSEASON_STAT3_OFFSET * char_w, header_y, ctx->theme.dim);
+	draw_text(ctx, ctx->font, "OVR",   header_x + OFFSEASON_STAT4_OFFSET * char_w, header_y, ctx->theme.dim);
 }
 
 static void draw_hitter_overview(SDLCtx *ctx, const Panel *pn, Hitter *h, int char_w, int row, 
@@ -741,6 +743,8 @@ static void draw_hitter_overview(SDLCtx *ctx, const Panel *pn, Hitter *h, int ch
 	draw_text(ctx, ctx->font, buf, row_x + OFFSEASON_STAT3_OFFSET * char_w, row_y + 1, col);
 	snprintf(buf, sizeof(buf), "%d", h->ratings.speed);
 	draw_text(ctx, ctx->font, buf, row_x + OFFSEASON_STAT4_OFFSET * char_w, row_y + 1, col);
+	snprintf(buf, sizeof(buf), "%d", total_hitter_rating(h));
+	draw_text(ctx, ctx->font, buf, row_x + OFFSEASON_STAT5_OFFSET * char_w, row_y + 1, col);
 }
 
 static void draw_pitcher_overview(SDLCtx *ctx, const Panel *pn, Pitcher *p, int char_w, int row, 
@@ -756,6 +760,8 @@ static void draw_pitcher_overview(SDLCtx *ctx, const Panel *pn, Pitcher *p, int 
 	draw_text(ctx, ctx->font, buf, row_x + OFFSEASON_STAT2_OFFSET * char_w, row_y + 1, col);
 	snprintf(buf, sizeof(buf), "%d", p->ratings.stamina);
 	draw_text(ctx, ctx->font, buf, row_x + OFFSEASON_STAT3_OFFSET * char_w, row_y + 1, col);
+	snprintf(buf, sizeof(buf), "%d", total_pitcher_rating(p));
+	draw_text(ctx, ctx->font, buf, row_x + OFFSEASON_STAT4_OFFSET * char_w, row_y + 1, col);
 }
 
 void sdl_offseason_ui(SDLCtx *ctx, Sim *sim) {
