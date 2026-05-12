@@ -547,7 +547,7 @@ void sdl_season_ui(SDLCtx *ctx, Sim *sim) {
 		int left_x = (win_width - total_width) / 2;
 		int right_x = left_x + width_left + gap;
 		int top_y = (win_height - total_h) / 2;
-		int bot_y = top_y + row_height + gap;
+		int bot_y = top_y + row_height + (gap * 2);
 
 		SDL_Event e;
 		while (SDL_PollEvent(&e)) {
@@ -605,6 +605,8 @@ void sdl_world_series_ui(SDLCtx *ctx, Sim *sim) {
 	Team *al_champ = sim->al_teams[0];
 	Team *nl_champ = sim->nl_teams[0];
 
+	if (al_champ == sim->selected_team || nl_champ == sim->selected_team) sim->sel_pennants_won++;
+
 	SDL_Color al_color = team_color_lookup(al_champ->short_name);
 	SDL_Color nl_color = team_color_lookup(nl_champ->short_name);
 
@@ -624,6 +626,8 @@ void sdl_world_series_ui(SDLCtx *ctx, Sim *sim) {
 		winner = nl_champ;
 		winner_str_color = nl_color;
 	}
+
+	if (winner == sim->selected_team) sim->sel_ws_won++;
 
 	char winner_str[DEFAULT_BUFFER_LEN];
 	snprintf(winner_str, sizeof(winner_str), "%s win the World Series!", winner->name);
@@ -1083,7 +1087,7 @@ void sdl_history_ui(SDLCtx *ctx, Sim *sim) {
 		int panel_w    = (win_width - (gap - padding) * 2) / 2;
 		int panel_h    = header_h + row_h + content_h + padding;
 		int top_y	   = ((win_height - panel_h) / 2) - (padding * 6);
-		int bot_y      = top_y + panel_h + gap;
+		int bot_y      = top_y + panel_h + (gap * 2);
 		int panel_x	   = (panel_w - 1.2 * (padding * gap));
 
 		Panel top_hitter_panel  = { panel_x, top_y, panel_w, panel_h };
@@ -1099,9 +1103,13 @@ void sdl_history_ui(SDLCtx *ctx, Sim *sim) {
 		draw_pitcher_stats_header(ctx, &top_pitcher_panel, char_w);
 		draw_pitcher_stats(ctx, &top_pitcher_panel, sim->top_pitchers, sim->n_top_pitchers, show_career_stats);
 
+		char pennants_won[32];
+		snprintf(pennants_won, sizeof(pennants_won), "%d Pennants Won", sim->sel_pennants_won);
 		char series_won[32];
 		snprintf(series_won, sizeof(series_won), "%d World Series Won", sim->sel_ws_won);
-		draw_screen_title(ctx, sim->selected_team->name, win_width, top_y - (padding * 2) - gap, ctx->theme.title);
+
+		draw_screen_title(ctx, sim->selected_team->name, win_width, top_y - (padding * 3) - gap, ctx->theme.title);
+		draw_screen_title(ctx, pennants_won, win_width, top_y - (padding * 2) - gap, ctx->theme.title);
 		draw_screen_title(ctx, series_won, win_width, top_y - padding - gap, ctx->theme.title);
 
 		SDL_RenderPresent(ctx->renderer);

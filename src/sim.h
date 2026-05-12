@@ -52,6 +52,7 @@ typedef struct {
 	Team **al_teams;
 	Team **nl_teams;
 	Team *selected_team;
+	unsigned int sel_pennants_won;
 	unsigned int sel_ws_won;
 	size_t al_team_count;
 	size_t nl_team_count;
