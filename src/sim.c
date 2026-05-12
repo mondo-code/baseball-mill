@@ -318,7 +318,6 @@ static int comp_top_pitchers(const void *a, const void *b) {
 
 // helpers for inserting players into the top players list by insertion sort approach
 static void update_top_hitters(Sim *sim) {
-	qsort(sim->top_hitters, sim->n_top_hitters, sizeof(Hitter*), comp_top_hitters);
 	Team *sel = sim->selected_team;
 	for (int i = 0; i < sel->n_hitters; i++) {
 		Hitter *h = sel->hitters[i];
@@ -349,10 +348,10 @@ static void update_top_hitters(Sim *sim) {
 		sim->top_hitters[ins] = copy_hitter(h);
 		if (sim->n_top_hitters < N_TOP_PLAYERS) sim->n_top_hitters++;
 	}
+	qsort(sim->top_hitters, sim->n_top_hitters, sizeof(Hitter*), comp_top_hitters);
 }
 
 static void update_top_pitchers(Sim *sim) {
-	qsort(sim->top_pitchers, sim->n_top_pitchers, sizeof(Pitcher*), comp_top_pitchers);
 	Team *sel = sim->selected_team;
 	for (int i = 0; i < sel->n_pitchers; i++) {
 		Pitcher *p = sel->pitchers[i];
@@ -383,6 +382,7 @@ static void update_top_pitchers(Sim *sim) {
 		sim->top_pitchers[ins] = copy_pitcher(p);
 		if (sim->n_top_pitchers < N_TOP_PLAYERS) sim->n_top_pitchers++;
 	}
+	qsort(sim->top_pitchers, sim->n_top_pitchers, sizeof(Pitcher*), comp_top_pitchers);
 }
 
 void reset_season_stats(Sim *sim) {

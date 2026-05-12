@@ -1104,7 +1104,7 @@ void sdl_history_ui(SDLCtx *ctx, Sim *sim) {
 		draw_pitcher_stats(ctx, &top_pitcher_panel, sim->top_pitchers, sim->n_top_pitchers, show_career_stats);
 
 		char pennants_won[32];
-		snprintf(pennants_won, sizeof(pennants_won), "%d Pennants Won", sim->sel_pennants_won);
+		snprintf(pennants_won, sizeof(pennants_won), "%d Pennant(s) Won", sim->sel_pennants_won);
 		char series_won[32];
 		snprintf(series_won, sizeof(series_won), "%d World Series Won", sim->sel_ws_won);
 
