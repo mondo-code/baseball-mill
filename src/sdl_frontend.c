@@ -1,4 +1,5 @@
 #include <SDL2/SDL.h>
+#include <stdio.h>
 #include "sdl_frontend.h"
 #include "sim.h"
 #include "utils.h"
@@ -487,8 +488,9 @@ static void draw_pitcher_stats_header(SDLCtx *ctx, const Panel *pn, int char_w) 
 	draw_text(ctx, ctx->font, "ERA", header_x + SEASON_STAT2_OFFSET * char_w, header_y, ctx->theme.dim);
 	draw_text(ctx, ctx->font, "ER", header_x + SEASON_STAT3_OFFSET * char_w, header_y, ctx->theme.dim);
 	draw_text(ctx, ctx->font, "AVGA", header_x + SEASON_STAT4_OFFSET * char_w, header_y, ctx->theme.dim);
-	draw_text(ctx, ctx->font, "K", header_x + SEASON_STAT5_OFFSET * char_w, header_y, ctx->theme.dim);
-	draw_text(ctx, ctx->font, "BB", header_x + SEASON_STAT6_OFFSET * char_w, header_y, ctx->theme.dim);
+	draw_text(ctx, ctx->font, "WHIP", header_x + SEASON_STAT5_OFFSET * char_w, header_y, ctx->theme.dim);
+	draw_text(ctx, ctx->font, "K", header_x + SEASON_STAT6_OFFSET * char_w, header_y, ctx->theme.dim);
+	draw_text(ctx, ctx->font, "BB", header_x + SEASON_STAT7_OFFSET * char_w, header_y, ctx->theme.dim);
 }
 
 static void draw_pitcher_stats(SDLCtx *ctx, const Panel *pn, Pitcher **pitchers, size_t n_pitchers, bool show_career_stats) {
@@ -521,11 +523,14 @@ static void draw_pitcher_stats(SDLCtx *ctx, const Panel *pn, Pitcher **pitchers,
 		snprintf(buf, sizeof(buf), ".%03d", (int)(stats.AVGA * 1000));
 		draw_text(ctx, ctx->font, buf, rx + SEASON_STAT4_OFFSET * char_w, cy, ctx->theme.text);
 
-		snprintf(buf, sizeof(buf), "%d", stats.SO);
+		snprintf(buf, sizeof(buf), "%.2f", stats.WHIP);
 		draw_text(ctx, ctx->font, buf, rx + SEASON_STAT5_OFFSET * char_w, cy, ctx->theme.text);
 
-		snprintf(buf, sizeof(buf), "%d", stats.BBA);
+		snprintf(buf, sizeof(buf), "%d", stats.SO);
 		draw_text(ctx, ctx->font, buf, rx + SEASON_STAT6_OFFSET * char_w, cy, ctx->theme.text);
+
+		snprintf(buf, sizeof(buf), "%d", stats.BBA);
+		draw_text(ctx, ctx->font, buf, rx + SEASON_STAT7_OFFSET * char_w, cy, ctx->theme.text);
 
         cy += row_h;
     }

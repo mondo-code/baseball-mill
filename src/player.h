@@ -40,7 +40,7 @@ typedef struct {
 typedef struct {
 	unsigned int GS, BF, HA, ER, BBA, SO;
 	Innings IP;
-	double AVGA, ERA;
+	double AVGA, WHIP, ERA;
 } PitcherStats;
 
 typedef struct {
@@ -61,6 +61,7 @@ void hitter_age_curve(Hitter *h);
 void pitcher_age_curve(Pitcher *p);
 void add_hitter_stats(HitterStats *a, HitterStats *b);
 void add_pitcher_stats(PitcherStats *a, PitcherStats *b);
+double innings_to_double(Innings *i);
 unsigned int total_hitter_rating(Hitter *h);
 unsigned int total_pitcher_rating(Pitcher *p);
 

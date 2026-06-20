@@ -158,6 +158,11 @@ void add_pitcher_stats(PitcherStats *a, PitcherStats *b) {
     double ip_total = (double)a->IP.whole + (a->IP.thirds / 3.0);
     a->ERA = (ip_total > 0.0) ? (a->ER / ip_total) * 9.0 : 0.0;
 	a->AVGA = (a->BF > 0) ? ((double)a->HA / a->BF) : 0.0;
+	a->WHIP = (a->HA + a->BBA) / innings_to_double(&a->IP);
+}
+
+double innings_to_double(Innings *i) {
+	return i->whole + (i->thirds * 0.33);
 }
 
 unsigned int total_hitter_rating(Hitter *h) {
