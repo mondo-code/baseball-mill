@@ -5,6 +5,9 @@
 #include "utils.h"
 
 static unsigned int running_id = 1;
+static const float age_growth_rate = 0.04f;
+static const float age_growth_max = 1.1f;
+static const float age_growth_min = 0.4f;
 
 Hitter *gen_hitter(unsigned int age) {
 	Hitter *h = malloc(sizeof(Hitter));
@@ -86,26 +89,39 @@ void add_innings(Innings *a, Innings *b) {
 // age multiplier: f(delta) = 1.0 - rate * delta^2
 static float age_multiplier(unsigned int age, unsigned int peak_age, float decline_rate) {
 	float delta = (float)age - (float)peak_age;
-	float rate = (delta < 0) ? decline_rate * 0.5f : decline_rate;
-	float mult = 1.0f - rate * (delta * delta);
-	if (mult > 1.0f) mult = 1.0f;
-	if (mult < 0.3f) mult = 0.3f;
+	float mult;
+
+	if (delta < 0.0) {
+		mult = 1.0f + age_growth_rate * -delta;
+		if (mult > age_growth_max) mult = age_growth_max;
+	} else {
+		mult = 1.0f - decline_rate * (delta*delta);
+		if (mult < age_growth_min) mult = age_growth_min;
+	}
+
 	return mult;
+}
+
+static unsigned int clamp_rating(unsigned int rating, float mult) {
+	float r = (float)rating * mult;
+	if (r > 99.0f) r = 99.0f;
+	if (r < 1.0f) r = 1.0f;
+	return (unsigned int)r;
 }
 
 void hitter_age_curve(Hitter *h) {
     unsigned int age = h->base.age;
 
 	// certain stats are meant to decline slower with age to be more realistic 
-	float contact_mult = age_multiplier(age, 20.0f, 0.0020f);
+	float contact_mult = age_multiplier(age, 30.0f, 0.0020f);
     float power_mult   = age_multiplier(age, 29.0f, 0.0020f);
     float eye_mult     = age_multiplier(age, 30.0f, 0.0010f);
     float speed_mult   = age_multiplier(age, 26.0f, 0.0030f);
 
-    h->ratings.contact = (unsigned int)(h->ratings.contact * contact_mult);
-    h->ratings.power   = (unsigned int)(h->ratings.power   * power_mult);
-    h->ratings.eye     = (unsigned int)(h->ratings.eye     * eye_mult);
-    h->ratings.speed   = (unsigned int)(h->ratings.speed   * speed_mult);
+    h->ratings.contact	= clamp_rating(h->ratings.contact, contact_mult);
+    h->ratings.power	= clamp_rating(h->ratings.power, power_mult);
+    h->ratings.eye		= clamp_rating(h->ratings.eye, eye_mult);
+    h->ratings.speed	= clamp_rating(h->ratings.speed, speed_mult);
 }
 
 void pitcher_age_curve(Pitcher *p) {
@@ -115,9 +131,9 @@ void pitcher_age_curve(Pitcher *p) {
 	float stuff_mult	= age_multiplier(age, 29.0f, 0.0030f);
 	float stamina_mult	= age_multiplier(age, 29.0f, 0.0020f); 
 
-	p->ratings.command	= (unsigned int)(p->ratings.command * command_mult);
-	p->ratings.stuff	= (unsigned int)(p->ratings.stuff * stuff_mult);
-	p->ratings.stamina	= (unsigned int)(p->ratings.stamina * stamina_mult);
+	p->ratings.command	= clamp_rating(p->ratings.command, command_mult);
+	p->ratings.stuff	= clamp_rating(p->ratings.stuff, stuff_mult);
+	p->ratings.stamina	= clamp_rating(p->ratings.stamina, stamina_mult);
 }
 
 // add stats from stats struct b to stats struct a
